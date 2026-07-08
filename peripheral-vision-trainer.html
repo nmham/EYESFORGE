@@ -1,0 +1,2382 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#171818">
+  <meta name="application-name" content="EYES FORGE">
+  <link rel="manifest" href="./manifest.webmanifest">
+  <link rel="icon" href="./favicon.svg" type="image/svg+xml">
+  <title>EYES FORGE</title>
+  <style>
+    :root {
+      color-scheme: dark;
+      --bg: #171818;
+      --panel: rgba(24, 26, 27, 0.82);
+      --line: rgba(255, 255, 255, 0.14);
+      --text: #f5f7f8;
+      --muted: #aeb7bd;
+      --orange: #ffad12;
+      --orange-2: #ff7a00;
+      --cyan: #58d7ff;
+      --green: #70f39a;
+      --red: #ff5f6d;
+      --shadow: rgba(0, 0, 0, 0.42);
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    }
+
+    * {
+      box-sizing: border-box;
+      -webkit-tap-highlight-color: transparent;
+      user-select: none;
+    }
+
+    html,
+    body {
+      width: 100%;
+      height: 100%;
+      margin: 0;
+      overflow: hidden;
+      background: var(--bg);
+      color: var(--text);
+    }
+
+    body {
+      cursor: none;
+    }
+
+    .stage,
+    .stage * {
+      cursor: none !important;
+    }
+
+    .stage {
+      position: fixed;
+      inset: 0;
+      min-width: 320px;
+      min-height: 520px;
+      overflow: hidden;
+      background:
+        radial-gradient(circle at center, rgba(255, 255, 255, 0.035), transparent 31%),
+        linear-gradient(rgba(255, 255, 255, 0.025) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(255, 255, 255, 0.021) 1px, transparent 1px),
+        #1b1c1c;
+      background-size: auto, 72px 72px, 72px 72px, auto;
+    }
+
+    .stage::before {
+      content: "";
+      position: absolute;
+      inset: -28%;
+      pointer-events: none;
+      background:
+        radial-gradient(circle at 50% 50%, transparent 0 23%, rgba(0, 0, 0, 0.09) 42%, rgba(0, 0, 0, 0.44) 100%);
+    }
+
+    .topbar {
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      z-index: 20;
+      display: grid;
+      grid-template-columns: minmax(130px, 1fr) auto minmax(170px, 1fr);
+      align-items: start;
+      gap: 16px;
+      padding: clamp(12px, 1.2vw, 22px) clamp(14px, 1.7vw, 32px);
+      font-weight: 800;
+      letter-spacing: 0;
+      text-transform: uppercase;
+      pointer-events: none;
+    }
+
+    .brand {
+      font-size: clamp(21px, 1.55vw, 34px);
+      line-height: 1;
+      text-shadow: 0 2px 12px var(--shadow);
+      white-space: nowrap;
+    }
+
+    .status {
+      justify-self: end;
+      display: flex;
+      align-items: center;
+      gap: clamp(16px, 2vw, 42px);
+      font-size: clamp(18px, 1.16vw, 27px);
+      line-height: 1;
+      text-shadow: 0 2px 12px var(--shadow);
+      white-space: nowrap;
+    }
+
+    .session-meta {
+      justify-self: center;
+      display: flex;
+      gap: 8px;
+      align-items: center;
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      opacity: 0;
+      transform: translateY(-4px);
+      transition: opacity 180ms ease, transform 180ms ease;
+    }
+
+    .playing .session-meta {
+      opacity: 1;
+      transform: translateY(0);
+    }
+
+    .center-mark {
+      position: absolute;
+      left: var(--focus-x, 50%);
+      top: var(--focus-y, 50%);
+      z-index: 15;
+      width: 86px;
+      height: 86px;
+      transform: translate(-50%, -50%);
+      pointer-events: none;
+      border-radius: 50%;
+      filter:
+        drop-shadow(0 0 10px rgba(255, 255, 255, 0.16))
+        drop-shadow(0 0 18px rgba(88, 215, 255, 0.18));
+      will-change: left, top;
+    }
+
+    .center-mark::before,
+    .center-mark::after {
+      content: "";
+      position: absolute;
+      left: 50%;
+      top: 50%;
+      border-radius: 999px;
+      background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.96) 34% 66%, transparent);
+      transform: translate(-50%, -50%);
+    }
+
+    .center-mark::before {
+      width: 3px;
+      height: 54px;
+      opacity: 0.86;
+      background: linear-gradient(180deg, transparent, rgba(255, 255, 255, 0.96) 32% 68%, transparent);
+    }
+
+    .center-mark::after {
+      width: 54px;
+      height: 3px;
+      opacity: 0.86;
+    }
+
+    .reticle-orbit,
+    .reticle-ring,
+    .reticle-core {
+      position: absolute;
+      inset: 0;
+      border-radius: 50%;
+      pointer-events: none;
+    }
+
+    .reticle-orbit {
+      background:
+        conic-gradient(from 24deg, transparent 0 34deg, rgba(88, 215, 255, 0.72) 35deg 48deg, transparent 49deg 144deg, rgba(255, 173, 18, 0.78) 145deg 158deg, transparent 159deg 262deg, rgba(112, 243, 154, 0.58) 263deg 275deg, transparent 276deg 360deg);
+      mask: radial-gradient(circle, transparent 0 56%, #000 57% 62%, transparent 63%);
+      animation: reticleSpin 8s linear infinite;
+      opacity: 0.92;
+    }
+
+    .reticle-ring {
+      inset: 14px;
+      border: 1px solid rgba(255, 255, 255, 0.26);
+      box-shadow:
+        0 0 18px rgba(88, 215, 255, 0.14),
+        inset 0 0 16px rgba(255, 173, 18, 0.1);
+      animation: reticleBreathe 2.8s ease-in-out infinite;
+    }
+
+    .reticle-core {
+      inset: 32px;
+      background:
+        radial-gradient(circle, rgba(255, 255, 255, 1) 0 15%, rgba(255, 210, 89, 0.96) 16% 34%, rgba(255, 173, 18, 0.6) 35% 52%, transparent 53%);
+      box-shadow:
+        0 0 16px rgba(255, 190, 52, 0.52),
+        0 0 30px rgba(88, 215, 255, 0.22);
+      animation: corePulse 1.9s ease-in-out infinite;
+    }
+
+    .fixation-ring {
+      position: absolute;
+      left: var(--focus-x, 50%);
+      top: var(--focus-y, 50%);
+      width: min(26vw, 280px);
+      height: min(26vw, 280px);
+      border: 1px solid rgba(255, 255, 255, 0.055);
+      border-radius: 50%;
+      transform: translate(-50%, -50%);
+      pointer-events: none;
+      opacity: 0.75;
+      will-change: left, top;
+      box-shadow:
+        inset 0 0 34px rgba(88, 215, 255, 0.025),
+        0 0 28px rgba(255, 173, 18, 0.025);
+    }
+
+    .fixation-ring::before {
+      content: "";
+      position: absolute;
+      inset: 18%;
+      border-radius: 50%;
+      border: 1px dashed rgba(255, 255, 255, 0.08);
+      animation: reticleSpin 18s linear infinite reverse;
+    }
+
+    .stage:not(.focus-moving) .fixation-ring::before {
+      animation-play-state: paused;
+    }
+
+    .target {
+      position: absolute;
+      z-index: 12;
+      width: var(--size);
+      height: var(--size);
+      left: var(--x);
+      top: var(--y);
+      border: 1px solid rgba(255, 196, 83, 0.56);
+      border-radius: 50%;
+      background:
+        radial-gradient(circle at 52% 48%, #ffd057 0 8%, #ffae13 9% 36%, #ce7500 61%, #111516 63% 100%);
+      box-shadow:
+        0 0 18px 7px rgba(255, 164, 0, var(--target-glow-strong, 0.28)),
+        0 0 34px 12px rgba(255, 142, 0, var(--target-glow-soft, 0.12)),
+        inset -8px -10px 18px rgba(0, 0, 0, 0.45),
+        inset 5px 5px 13px rgba(255, 255, 255, 0.14);
+      transform: translate(-50%, -50%) scale(0.72);
+      opacity: 0;
+      filter: saturate(var(--target-saturation, 1)) brightness(var(--target-brightness, 1));
+      cursor: default;
+      animation: targetIn 150ms cubic-bezier(.2, .8, .2, 1) forwards;
+      will-change: transform, opacity;
+    }
+
+    .cursor-aim {
+      --cursor-scale: 1;
+      position: fixed;
+      left: 0;
+      top: 0;
+      z-index: 40;
+      width: 36px;
+      height: 36px;
+      border-radius: 50%;
+      border: 2px solid rgba(255, 255, 255, 0.86);
+      transform: translate3d(var(--cursor-x, -100px), var(--cursor-y, -100px), 0) translate(-50%, -50%) scale(var(--cursor-scale, 1));
+      pointer-events: none;
+      opacity: 0;
+      transition: opacity 80ms ease, border-color 80ms ease;
+      box-shadow:
+        0 0 0 1px rgba(0, 0, 0, 0.28),
+        0 0 12px rgba(88, 215, 255, 0.34),
+        inset 0 0 10px rgba(255, 255, 255, 0.12);
+      filter: drop-shadow(0 0 8px rgba(88, 215, 255, 0.3));
+      will-change: transform, opacity;
+      contain: layout style paint;
+    }
+
+    .cursor-aim::before,
+    .cursor-aim::after {
+      content: "";
+      position: absolute;
+      left: 50%;
+      top: 50%;
+      border-radius: 999px;
+      background: rgba(255, 255, 255, 0.96);
+      transform: translate(-50%, -50%);
+    }
+
+    .cursor-aim::before {
+      width: 2px;
+      height: 50px;
+    }
+
+    .cursor-aim::after {
+      width: 50px;
+      height: 2px;
+    }
+
+    .cursor-aim.show {
+      opacity: 0.9;
+    }
+
+    .cursor-aim.click {
+      --cursor-scale: 0.82;
+      border-color: rgba(255, 173, 18, 0.96);
+    }
+
+    .cursor-aim.dot {
+      width: 24px;
+      height: 24px;
+      border-width: 0;
+      background: radial-gradient(circle, rgba(255, 255, 255, 1) 0 13%, rgba(88, 215, 255, 0.72) 14% 30%, transparent 31%);
+      box-shadow: 0 0 16px rgba(88, 215, 255, 0.5);
+    }
+
+    .cursor-aim.dot::before,
+    .cursor-aim.dot::after {
+      display: none;
+    }
+
+    .cursor-aim.ring {
+      width: 46px;
+      height: 46px;
+      border: 3px solid rgba(112, 243, 154, 0.84);
+      box-shadow:
+        0 0 0 1px rgba(0, 0, 0, 0.3),
+        0 0 16px rgba(112, 243, 154, 0.34),
+        inset 0 0 16px rgba(112, 243, 154, 0.12);
+    }
+
+    .cursor-aim.ring::before,
+    .cursor-aim.ring::after {
+      display: none;
+    }
+
+    .cursor-aim.bright {
+      width: 42px;
+      height: 42px;
+      border-color: rgba(255, 205, 82, 0.96);
+      box-shadow:
+        0 0 0 1px rgba(0, 0, 0, 0.34),
+        0 0 18px rgba(255, 173, 18, 0.48),
+        0 0 30px rgba(88, 215, 255, 0.26),
+        inset 0 0 12px rgba(255, 255, 255, 0.2);
+    }
+
+    .target::before,
+    .target::after {
+      content: "";
+      position: absolute;
+      inset: 16%;
+      border: 2px solid rgba(23, 24, 24, 0.46);
+      border-radius: 50%;
+    }
+
+    .target::after {
+      inset: 42%;
+      border-color: rgba(255, 239, 161, 0.62);
+      background: rgba(255, 187, 22, 0.3);
+    }
+
+    .target.apm-lead {
+      border-color: rgba(88, 215, 255, 0.72);
+      background:
+        radial-gradient(circle at 52% 48%, #effcff 0 9%, #58d7ff 10% 37%, #117fa2 62%, #111516 64% 100%);
+      box-shadow:
+        0 0 18px 7px rgba(88, 215, 255, var(--target-glow-strong, 0.34)),
+        0 0 38px 15px rgba(88, 215, 255, var(--target-glow-soft, 0.16)),
+        inset -8px -10px 18px rgba(0, 0, 0, 0.45),
+        inset 5px 5px 13px rgba(255, 255, 255, 0.18);
+    }
+
+    .target.apm-lead::before {
+      border-color: rgba(6, 33, 43, 0.52);
+    }
+
+    .target.apm-lead::after {
+      border-color: rgba(231, 252, 255, 0.74);
+      background: rgba(88, 215, 255, 0.36);
+    }
+
+    .target.apm-lead .target-label {
+      color: #061b22;
+      text-shadow:
+        0 1px 0 rgba(255, 255, 255, 0.44),
+        0 0 12px rgba(231, 252, 255, 0.62);
+    }
+
+    .target.warn {
+      animation: targetIn 150ms cubic-bezier(.2, .8, .2, 1) forwards, targetWarn 240ms ease-in-out infinite;
+    }
+
+    .target-label {
+      position: absolute;
+      inset: 0;
+      z-index: 3;
+      display: grid;
+      place-items: center;
+      color: #21170b;
+      font-size: calc(var(--size) * 0.44);
+      font-weight: 1000;
+      line-height: 1;
+      text-shadow:
+        0 1px 0 rgba(255, 255, 255, 0.36),
+        0 0 10px rgba(255, 227, 115, 0.45);
+      pointer-events: none;
+    }
+
+    .target-label.wide {
+      font-size: calc(var(--size) * 0.34);
+    }
+
+    .hit-burst {
+      position: absolute;
+      z-index: 11;
+      left: var(--x);
+      top: var(--y);
+      width: var(--size);
+      height: var(--size);
+      border: 2px solid rgba(112, 243, 154, 0.82);
+      border-radius: 50%;
+      transform: translate(-50%, -50%);
+      pointer-events: none;
+      animation: burst 360ms ease-out forwards;
+    }
+
+    .miss-burst {
+      position: absolute;
+      z-index: 11;
+      left: var(--x);
+      top: var(--y);
+      width: var(--size);
+      height: var(--size);
+      border: 2px solid rgba(255, 95, 109, 0.8);
+      border-radius: 50%;
+      transform: translate(-50%, -50%);
+      pointer-events: none;
+      animation: burst 360ms ease-out forwards;
+    }
+
+    .menu {
+      position: absolute;
+      inset: 0;
+      z-index: 30;
+      display: grid;
+      place-items: center;
+      padding: 92px 20px 88px;
+      pointer-events: none;
+    }
+
+    .menu-inner {
+      width: min(860px, 100%);
+      display: grid;
+      gap: 18px;
+      justify-items: center;
+      pointer-events: auto;
+    }
+
+    .safety-panel {
+      width: min(720px, 100%);
+      display: grid;
+      gap: 16px;
+      padding: clamp(20px, 3vw, 30px);
+      border: 1px solid rgba(255, 173, 18, 0.28);
+      border-radius: 8px;
+      background: rgba(21, 23, 24, 0.88);
+      box-shadow: 0 26px 80px rgba(0, 0, 0, 0.42);
+      backdrop-filter: blur(16px);
+      opacity: 0;
+      transform: translateY(8px);
+      animation: fadeUp 360ms 80ms ease forwards;
+    }
+
+    .safety-panel h1 {
+      margin: 0;
+      font-size: clamp(26px, 4vw, 48px);
+      line-height: 1.05;
+      letter-spacing: 0;
+      text-align: center;
+      text-transform: uppercase;
+    }
+
+    .safety-panel p {
+      margin: 0;
+      color: var(--muted);
+      font-size: clamp(14px, 1.6vw, 17px);
+      line-height: 1.75;
+      text-align: center;
+    }
+
+    .safety-list {
+      display: grid;
+      gap: 8px;
+      margin: 0;
+      padding: 0;
+      list-style: none;
+    }
+
+    .safety-list li {
+      padding: 10px 12px;
+      border: 1px solid rgba(255, 255, 255, 0.11);
+      border-radius: 8px;
+      background: rgba(255, 255, 255, 0.045);
+      color: rgba(245, 247, 248, 0.92);
+      font-size: 14px;
+      line-height: 1.55;
+    }
+
+    .title-block {
+      display: grid;
+      gap: 10px;
+      justify-items: center;
+      text-align: center;
+      opacity: 0;
+      transform: translateY(8px);
+      animation: fadeUp 360ms 80ms ease forwards;
+    }
+
+    .title-block h1 {
+      margin: 0;
+      font-size: clamp(32px, 5vw, 74px);
+      line-height: 0.94;
+      letter-spacing: 0;
+      text-transform: uppercase;
+      text-shadow: 0 0 40px rgba(255, 173, 18, 0.14);
+    }
+
+    .title-block p {
+      max-width: 560px;
+      margin: 0;
+      color: var(--muted);
+      font-size: clamp(14px, 1.5vw, 18px);
+      line-height: 1.6;
+    }
+
+    .control-panel {
+      width: min(860px, 100%);
+      display: grid;
+      gap: 14px;
+      padding: 18px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: rgba(21, 23, 24, 0.72);
+      box-shadow: 0 22px 70px rgba(0, 0, 0, 0.32);
+      backdrop-filter: blur(14px);
+      opacity: 0;
+      transform: translateY(8px);
+      animation: fadeUp 360ms 150ms ease forwards;
+    }
+
+    .tab-list {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 8px;
+      padding: 4px;
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 8px;
+      background: rgba(0, 0, 0, 0.18);
+    }
+
+    .tab-button {
+      min-height: 38px;
+      border: 1px solid transparent;
+      border-radius: 6px;
+      background: transparent;
+      color: var(--muted);
+      font: inherit;
+      font-size: 13px;
+      font-weight: 900;
+      letter-spacing: 0.04em;
+      cursor: pointer;
+      transition: background 140ms ease, color 140ms ease, border-color 140ms ease;
+    }
+
+    .tab-button[aria-selected="true"] {
+      border-color: rgba(255, 173, 18, 0.46);
+      background: rgba(255, 173, 18, 0.14);
+      color: var(--text);
+    }
+
+    .tab-panel {
+      display: none;
+      gap: 14px;
+    }
+
+    .tab-panel.active {
+      display: grid;
+    }
+
+    .mode-row,
+    .option-row {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      justify-content: center;
+      align-items: center;
+    }
+
+    .start-row {
+      display: flex;
+      justify-content: center;
+      padding-top: 2px;
+    }
+
+    .start-row .button {
+      min-width: min(260px, 100%);
+      min-height: 54px;
+      font-size: 18px;
+    }
+
+    .segmented,
+    .button {
+      min-height: 48px;
+      border: 1px solid rgba(255, 177, 30, 0.72);
+      border-radius: 8px;
+      padding: 0 22px;
+      background: linear-gradient(180deg, #ffbd27, #ff9f07);
+      color: #151515;
+      font: inherit;
+      font-size: 16px;
+      font-weight: 800;
+      letter-spacing: 0;
+      cursor: pointer;
+      box-shadow: 0 10px 26px rgba(255, 156, 0, 0.16);
+      transition: transform 120ms ease, filter 120ms ease, border-color 120ms ease;
+    }
+
+    .segmented {
+      min-width: 154px;
+    }
+
+    .segmented:hover,
+    .button:hover {
+      transform: translateY(-1px);
+      filter: brightness(1.07);
+    }
+
+    .segmented[aria-pressed="true"] {
+      border-color: rgba(255, 255, 255, 0.72);
+      box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.12), 0 12px 34px rgba(255, 156, 0, 0.28);
+    }
+
+    .ghost {
+      border-color: rgba(255, 255, 255, 0.18);
+      background: rgba(255, 255, 255, 0.06);
+      color: var(--text);
+      box-shadow: none;
+    }
+
+    .field {
+      display: grid;
+      gap: 8px;
+      min-width: min(260px, 100%);
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 800;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+    }
+
+    .mode-help {
+      min-height: 38px;
+      display: grid;
+      place-items: center;
+      padding: 8px 12px;
+      border: 1px solid rgba(255, 255, 255, 0.09);
+      border-radius: 8px;
+      background: rgba(255, 255, 255, 0.035);
+      color: rgba(245, 247, 248, 0.68);
+      font-size: 13px;
+      font-weight: 700;
+      line-height: 1.5;
+      text-align: center;
+      opacity: 0;
+      transform: translateY(-2px);
+      transition: opacity 160ms ease, transform 160ms ease;
+    }
+
+    .mode-help.show {
+      opacity: 1;
+      transform: translateY(0);
+    }
+
+    .field output {
+      color: var(--text);
+      letter-spacing: 0;
+    }
+
+    input[type="range"] {
+      width: 100%;
+      accent-color: var(--orange);
+    }
+
+    .hud-bottom {
+      position: absolute;
+      left: 20px;
+      right: 20px;
+      bottom: 18px;
+      z-index: 18;
+      display: grid;
+      grid-template-columns: minmax(160px, 300px) 1fr auto auto;
+      align-items: end;
+      gap: 16px;
+      pointer-events: none;
+    }
+
+    .timer-track {
+      height: 20px;
+      border-radius: 999px;
+      background: rgba(255, 255, 255, 0.08);
+      overflow: hidden;
+      box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.08);
+    }
+
+    .timer-fill {
+      width: 100%;
+      height: 100%;
+      border-radius: inherit;
+      background: linear-gradient(90deg, var(--orange), #ffc043);
+      box-shadow: 0 0 20px rgba(255, 163, 0, 0.42);
+      transform-origin: left center;
+      transform: scaleX(1);
+    }
+
+    .feedback {
+      justify-self: center;
+      min-height: 28px;
+      color: rgba(255, 255, 255, 0.88);
+      font-weight: 800;
+      font-size: 14px;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      opacity: 0;
+      transform: translateY(6px);
+      transition: opacity 160ms ease, transform 160ms ease;
+    }
+
+    .feedback.show {
+      opacity: 1;
+      transform: translateY(0);
+    }
+
+    .live-stats {
+      justify-self: end;
+      display: flex;
+      gap: 8px;
+      align-items: center;
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 800;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      opacity: 0;
+      transition: opacity 160ms ease;
+    }
+
+    .audio-control {
+      justify-self: end;
+      display: grid;
+      grid-template-columns: auto auto;
+      align-items: center;
+      gap: 4px 8px;
+      min-width: 150px;
+      color: var(--muted);
+      font-size: 11px;
+      font-weight: 900;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      pointer-events: auto;
+    }
+
+    .audio-control output {
+      color: var(--text);
+      letter-spacing: 0;
+      text-align: right;
+    }
+
+    .audio-control input {
+      grid-column: 1 / -1;
+      width: 150px;
+    }
+
+    .cursor-panel-toggle {
+      position: absolute;
+      right: 22px;
+      top: 76px;
+      z-index: 35;
+      min-height: 38px;
+      border: 1px solid rgba(255, 255, 255, 0.18);
+      border-radius: 8px;
+      padding: 0 14px;
+      background: rgba(24, 26, 27, 0.72);
+      color: var(--text);
+      font: inherit;
+      font-size: 12px;
+      font-weight: 900;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      cursor: pointer;
+      backdrop-filter: blur(10px);
+    }
+
+    .cursor-panel {
+      position: absolute;
+      right: 22px;
+      top: 124px;
+      z-index: 35;
+      width: 172px;
+      display: none;
+      gap: 8px;
+      padding: 10px;
+      border: 1px solid rgba(255, 255, 255, 0.14);
+      border-radius: 8px;
+      background: rgba(21, 23, 24, 0.86);
+      box-shadow: 0 16px 42px rgba(0, 0, 0, 0.34);
+      backdrop-filter: blur(12px);
+    }
+
+    .cursor-panel.open {
+      display: grid;
+    }
+
+    .cursor-panel button {
+      min-height: 34px;
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      border-radius: 6px;
+      background: rgba(255, 255, 255, 0.055);
+      color: var(--text);
+      font: inherit;
+      font-size: 12px;
+      font-weight: 900;
+      cursor: pointer;
+    }
+
+    .cursor-panel button[aria-pressed="true"] {
+      border-color: rgba(255, 173, 18, 0.6);
+      background: rgba(255, 173, 18, 0.18);
+      color: var(--orange);
+    }
+
+    .release-toggle {
+      position: absolute;
+      right: 22px;
+      bottom: 92px;
+      z-index: 35;
+      min-height: 32px;
+      border: 1px solid rgba(255, 255, 255, 0.13);
+      border-radius: 8px;
+      padding: 0 11px;
+      background: rgba(24, 26, 27, 0.58);
+      color: rgba(245, 247, 248, 0.72);
+      font: inherit;
+      font-size: 11px;
+      font-weight: 900;
+      letter-spacing: 0.02em;
+      cursor: pointer;
+      backdrop-filter: blur(10px);
+      opacity: 0.72;
+      transition: opacity 140ms ease, border-color 140ms ease, color 140ms ease;
+    }
+
+    .release-toggle:hover,
+    .release-toggle[aria-expanded="true"] {
+      opacity: 1;
+      color: var(--text);
+      border-color: rgba(255, 173, 18, 0.38);
+    }
+
+    .release-panel {
+      position: absolute;
+      right: 22px;
+      bottom: 132px;
+      z-index: 35;
+      width: min(320px, calc(100vw - 44px));
+      display: none;
+      gap: 10px;
+      padding: 14px;
+      border: 1px solid rgba(255, 255, 255, 0.14);
+      border-radius: 8px;
+      background: rgba(21, 23, 24, 0.9);
+      color: var(--text);
+      box-shadow: 0 18px 48px rgba(0, 0, 0, 0.34);
+      backdrop-filter: blur(14px);
+    }
+
+    .release-panel.open {
+      display: grid;
+    }
+
+    .release-panel h2 {
+      margin: 0;
+      font-size: 13px;
+      letter-spacing: 0.03em;
+    }
+
+    .release-panel small {
+      color: var(--muted);
+      font-size: 11px;
+      font-weight: 800;
+    }
+
+    .release-panel ul {
+      margin: 0;
+      padding-left: 18px;
+      color: rgba(245, 247, 248, 0.82);
+      font-size: 12px;
+      line-height: 1.55;
+    }
+
+    .release-panel button {
+      justify-self: end;
+      min-height: 30px;
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      border-radius: 6px;
+      padding: 0 10px;
+      background: rgba(255, 255, 255, 0.055);
+      color: var(--text);
+      font: inherit;
+      font-size: 11px;
+      font-weight: 900;
+      cursor: pointer;
+    }
+
+    .playing .live-stats {
+      opacity: 1;
+    }
+
+    .live-stats strong {
+      color: var(--text);
+      letter-spacing: 0;
+    }
+
+    .results {
+      display: none;
+      width: min(680px, 100%);
+      padding: 20px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: rgba(21, 23, 24, 0.82);
+      box-shadow: 0 22px 70px rgba(0, 0, 0, 0.36);
+      backdrop-filter: blur(14px);
+      pointer-events: auto;
+    }
+
+    .results.show {
+      display: grid;
+      gap: 18px;
+      animation: fadeUp 260ms ease both;
+    }
+
+    .results h2 {
+      margin: 0;
+      font-size: clamp(25px, 3vw, 40px);
+      letter-spacing: 0;
+      text-align: center;
+      text-transform: uppercase;
+    }
+
+    .stat-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 10px;
+    }
+
+    .stat {
+      min-height: 86px;
+      display: grid;
+      place-items: center;
+      gap: 4px;
+      padding: 12px;
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      border-radius: 8px;
+      background: rgba(255, 255, 255, 0.045);
+      text-align: center;
+    }
+
+    .stat b {
+      font-size: clamp(24px, 3vw, 42px);
+      line-height: 1;
+      color: var(--orange);
+    }
+
+    .stat span {
+      color: var(--muted);
+      font-size: 11px;
+      font-weight: 800;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+    }
+
+    .ranking {
+      width: min(680px, 100%);
+      display: grid;
+      gap: 10px;
+      padding: 14px;
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      border-radius: 8px;
+      background: rgba(255, 255, 255, 0.045);
+    }
+
+    .ranking h3 {
+      margin: 0;
+      color: var(--text);
+      font-size: 13px;
+      font-weight: 900;
+      letter-spacing: 0.08em;
+      text-align: center;
+      text-transform: uppercase;
+    }
+
+    .ranking-list {
+      display: grid;
+      gap: 6px;
+      margin: 0;
+      padding: 0;
+      list-style: none;
+    }
+
+    .ranking-list li {
+      display: grid;
+      grid-template-columns: 34px 1fr auto auto;
+      gap: 10px;
+      align-items: center;
+      min-height: 34px;
+      padding: 6px 8px;
+      border-radius: 6px;
+      background: rgba(0, 0, 0, 0.18);
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 800;
+    }
+
+    .ranking-list strong {
+      color: var(--orange);
+      font-size: 17px;
+    }
+
+    .ranking-empty {
+      min-height: 34px;
+      display: grid;
+      place-items: center;
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 800;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+    }
+
+    .hidden {
+      display: none;
+    }
+
+    @keyframes targetIn {
+      to {
+        opacity: var(--target-opacity, 1);
+        transform: translate(-50%, -50%) scale(1);
+      }
+    }
+
+    @keyframes targetPulse {
+      50% {
+        box-shadow:
+          0 0 24px 10px rgba(255, 164, 0, 0.45),
+          0 0 70px 22px rgba(255, 142, 0, 0.22),
+          inset -8px -10px 18px rgba(0, 0, 0, 0.45),
+          inset 5px 5px 13px rgba(255, 255, 255, 0.14);
+      }
+    }
+
+    @keyframes targetWarn {
+      50% {
+        transform: translate(-50%, -50%) scale(1.08);
+        border-color: rgba(255, 95, 109, 0.78);
+      }
+    }
+
+    @keyframes burst {
+      to {
+        opacity: 0;
+        transform: translate(-50%, -50%) scale(2.3);
+      }
+    }
+
+    @keyframes fadeUp {
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    @keyframes reticleSpin {
+      to {
+        rotate: 360deg;
+      }
+    }
+
+    @keyframes reticleBreathe {
+      0%, 100% {
+        transform: scale(0.96);
+        opacity: 0.72;
+      }
+      50% {
+        transform: scale(1.06);
+        opacity: 1;
+      }
+    }
+
+    @keyframes corePulse {
+      0%, 100% {
+        transform: scale(0.9);
+        opacity: 0.78;
+      }
+      50% {
+        transform: scale(1.16);
+        opacity: 1;
+      }
+    }
+
+    @media (max-width: 720px) {
+      .topbar {
+        grid-template-columns: 1fr;
+        gap: 8px;
+      }
+
+      .session-meta {
+        justify-self: start;
+      }
+
+      .status {
+        justify-self: start;
+        gap: 18px;
+        font-size: 16px;
+      }
+
+      .title-block p {
+        max-width: 320px;
+      }
+
+      .control-panel {
+        padding: 14px;
+      }
+
+      .segmented,
+      .button {
+        min-width: 132px;
+        min-height: 46px;
+        padding: 0 16px;
+        font-size: 14px;
+      }
+
+      .hud-bottom {
+        left: 12px;
+        right: 12px;
+        bottom: 12px;
+        grid-template-columns: 1fr;
+        gap: 8px;
+      }
+
+      .timer-track {
+        width: min(260px, 86vw);
+        height: 16px;
+      }
+
+      .feedback,
+      .audio-control,
+      .live-stats {
+        justify-self: start;
+      }
+
+      .audio-control {
+        min-width: 220px;
+      }
+
+      .audio-control input {
+        width: 220px;
+      }
+
+      .release-toggle {
+        right: 12px;
+        bottom: 154px;
+      }
+
+      .release-panel {
+        right: 12px;
+        bottom: 194px;
+        width: min(310px, calc(100vw - 24px));
+      }
+
+      .stat-grid {
+        grid-template-columns: repeat(2, 1fr);
+      }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      *,
+      *::before,
+      *::after {
+        animation-duration: 1ms !important;
+        transition-duration: 1ms !important;
+      }
+    }
+  </style>
+</head>
+<body>
+  <main class="stage" id="stage" aria-label="周辺視野トレーニングゲーム">
+    <div class="topbar">
+      <div class="brand">EYES FORGE</div>
+      <div class="session-meta" id="sessionMeta">PERIPHERAL FOCUS</div>
+      <div class="status">
+        <div><span id="scoreLabel">SCORE</span>: <span id="score">0</span></div>
+        <div>TIME: <span id="time">60</span></div>
+      </div>
+    </div>
+
+    <div class="fixation-ring" aria-hidden="true"></div>
+    <div class="center-mark" aria-hidden="true">
+      <span class="reticle-orbit"></span>
+      <span class="reticle-ring"></span>
+      <span class="reticle-core"></span>
+    </div>
+    <div class="cursor-aim" id="cursorAim" aria-hidden="true"></div>
+
+    <section class="menu" id="menu" aria-label="ゲームメニュー">
+      <div class="menu-inner">
+        <section class="safety-panel" id="safetyPanel" aria-label="注意事項">
+          <h1>Training Notice</h1>
+          <p>このツールは、設定を上げるほど目、頭、首や肩まわりに強い負荷がかかる場合があります。</p>
+          <ul class="safety-list">
+            <li>気分の悪さ、目の痛み、頭痛、めまい、吐き気、違和感が出たらすぐに中止してください。</li>
+            <li>最初は短時間、低めの速度、通常モードから始めてください。</li>
+            <li>中心移動、GridShot、APMを組み合わせる場合は、こまめに休憩を入れてください。</li>
+          </ul>
+          <div class="mode-row">
+            <button class="button" type="button" id="ackSafetyBtn">確認して始める</button>
+          </div>
+        </section>
+
+        <div class="title-block" id="titleBlock">
+          <h1>EYES FORGE</h1>
+          <p>中央のクロスヘアを見つめたまま、周辺視野に出た的を大まかにクリックまたはタップして撃ちます。</p>
+        </div>
+
+        <div class="control-panel" id="controls">
+          <div class="mode-row" aria-label="時間モード">
+            <button class="segmented helpable" type="button" data-duration="30" aria-pressed="false" data-help="短時間で軽く試すモードです。初回やウォームアップ向きです。">30秒モード</button>
+            <button class="segmented helpable" type="button" data-duration="60" aria-pressed="true" data-help="標準的な長さです。集中を保ちながらスコアを伸ばしやすい設定です。">60秒モード</button>
+            <button class="segmented helpable" type="button" data-duration="120" aria-pressed="false" data-help="長めの持久トレーニングです。疲労が強い場合は無理せず短いモードにしてください。">120秒モード</button>
+          </div>
+          <div class="option-row">
+            <label class="field helpable" data-help="的の補充テンポなどが上がります。エイムよりも視野への負荷が増えます。">
+              難易度 <output id="difficultyText">標準</output>
+              <input id="difficulty" type="range" min="1" max="5" value="3">
+            </label>
+            <label class="field helpable" data-help="的の色の濃さを調整します。薄くすると周辺視野で捉える難度が上がります。">
+              的の色 <output id="targetToneText">100%</output>
+              <input id="targetTone" type="range" min="35" max="100" value="100">
+            </label>
+            <label class="field helpable" data-help="的の大きさを調整します。大きめにするとエイムより視野認識の練習に寄せられます。">
+              的の大きさ <output id="targetSizeText">標準</output>
+              <input id="targetSize" type="range" min="75" max="145" value="100">
+            </label>
+            <label class="field helpable" data-help="中心視野の近くに的が出にくくなります。広げるほど周辺視野を使います。">
+              中央除外範囲 <output id="deadzoneText">広め</output>
+              <input id="deadzone" type="range" min="18" max="42" value="30">
+            </label>
+            <label class="field helpable" data-help="APMモードの数字的が中心からどこまで散らばるかを調整します。狭めるほど数字を認識しやすくなります。">
+              APM散らばり <output id="apmSpreadText">標準</output>
+              <input id="apmSpread" type="range" min="38" max="92" value="58">
+            </label>
+            <label class="field helpable" data-help="中心移動ONのときだけ効きます。速すぎると疲れやすいので少しずつ上げてください。">
+              中心移動速度 <output id="focusSpeedText">標準</output>
+              <input id="focusSpeed" type="range" min="1" max="14" value="3">
+            </label>
+          </div>
+          <div class="mode-row">
+            <button class="button ghost helpable" type="button" id="calmBtn" data-help="背景の刺激を少し抑えます。視覚ノイズを減らしたいときに使います。">集中モード</button>
+            <button class="button ghost helpable" type="button" id="movingFocusBtn" data-help="中心のレティクルがゆっくり動きます。追視と周辺視野を同時に使う高負荷モードです。">中心移動</button>
+            <button class="button ghost helpable" type="button" id="gridShotBtn" data-help="的を常に3つ表示します。撃つとノーディレイで補充されます。">GridShot</button>
+            <button class="button ghost helpable" type="button" id="apmBtn" data-help="5から1まで数字の的を順番に撃ちます。5個を消すとすぐ次の5個が出ます。">APM</button>
+            <button class="button ghost helpable" type="button" id="soundBtn" data-help="効果音のON/OFFです。音量は画面下のVOLで調整できます。">Sound ON</button>
+          </div>
+          <div class="mode-help" id="modeHelp" aria-live="polite"></div>
+          <div class="start-row">
+            <button class="button helpable" type="button" id="startBtn" data-help="選んだ設定でトレーニングを開始します。">Start</button>
+          </div>
+          <section class="ranking" aria-label="ランキング">
+            <h3 id="rankingTitle">Ranking</h3>
+            <ol class="ranking-list" id="rankingList"></ol>
+          </section>
+        </div>
+
+        <section class="results" id="results" aria-label="結果">
+          <h2>Training Complete</h2>
+          <div class="stat-grid">
+            <div class="stat"><b id="resultScore">0</b><span id="resultScoreLabel">Score</span></div>
+            <div class="stat"><b id="resultAccuracy">0%</b><span>Accuracy</span></div>
+            <div class="stat"><b id="resultCombo">0</b><span>Best Combo</span></div>
+            <div class="stat"><b id="resultReaction">0ms</b><span>Avg Reaction</span></div>
+          </div>
+          <section class="ranking" aria-label="結果ランキング">
+            <h3 id="resultRankingTitle">Ranking</h3>
+            <ol class="ranking-list" id="resultRankingList"></ol>
+          </section>
+          <div class="mode-row">
+            <button class="button" type="button" id="retryBtn">Retry</button>
+            <button class="button ghost" type="button" id="menuBtn">Menu</button>
+          </div>
+        </section>
+      </div>
+    </section>
+
+    <div class="hud-bottom">
+      <div class="timer-track" aria-hidden="true"><div class="timer-fill" id="timerFill"></div></div>
+      <div class="feedback" id="feedback"></div>
+      <label class="audio-control">
+        VOL <output id="volumeText">70%</output>
+        <input id="volume" type="range" min="0" max="100" value="70">
+      </label>
+      <div class="live-stats">
+        <span>ACC <strong id="accuracy">100%</strong></span>
+        <span>COMBO <strong id="combo">0</strong></span>
+        <span>AVG <strong id="reaction">0ms</strong></span>
+      </div>
+    </div>
+    <button class="cursor-panel-toggle" type="button" id="cursorPanelBtn">Cursor</button>
+    <div class="cursor-panel" id="cursorPanel" aria-label="カーソル照準">
+      <button type="button" data-cursor-style="cross" aria-pressed="true">Cross</button>
+      <button type="button" data-cursor-style="dot" aria-pressed="false">Dot</button>
+      <button type="button" data-cursor-style="ring" aria-pressed="false">Ring</button>
+      <button type="button" data-cursor-style="bright" aria-pressed="false">Bright</button>
+      <button type="button" id="cursorPanelClose">Close</button>
+    </div>
+    <button class="release-toggle" type="button" id="releaseNotesBtn" aria-expanded="false" aria-controls="releaseNotesPanel">更新情報</button>
+    <section class="release-panel" id="releaseNotesPanel" aria-label="更新情報">
+      <h2>EYES FORGE v0.9.9</h2>
+      <small>2026.07.09</small>
+      <ul>
+        <li>的の色の濃さと的の大きさを調整できる設定を追加</li>
+        <li>APMの記録時間がプレイ開始時の秒数で保存されるように修正</li>
+        <li>メニュー項目をかざした時と音量変更時に、音量確認用の小さなプレビュー音を追加</li>
+        <li>APMスコアを有効クリック数、所要時間、1.8倍補正で計算する方式に変更</li>
+        <li>APMを5〜1に戻し、開始数字「5」をアシスト表示</li>
+        <li>APMで大きい数字ほど前面に表示されるように調整</li>
+        <li>APMの的サイズを通常寄りに戻し、的同士の重なりを許容</li>
+        <li>APMモードを追加</li>
+        <li>APM散らばり調整とAPMスコア表示を追加</li>
+        <li>Web公開版とアプリ風インストール設定を追加</li>
+      </ul>
+      <button type="button" id="releaseNotesClose">閉じる</button>
+    </section>
+  </main>
+
+  <script>
+    const stage = document.getElementById("stage");
+    const menu = document.getElementById("menu");
+    const safetyPanel = document.getElementById("safetyPanel");
+    const titleBlock = document.getElementById("titleBlock");
+    const controls = document.getElementById("controls");
+    const results = document.getElementById("results");
+    const modeHelp = document.getElementById("modeHelp");
+    const cursorAim = document.getElementById("cursorAim");
+    const scoreLabel = document.getElementById("scoreLabel");
+    const scoreEl = document.getElementById("score");
+    const timeEl = document.getElementById("time");
+    const accuracyEl = document.getElementById("accuracy");
+    const comboEl = document.getElementById("combo");
+    const reactionEl = document.getElementById("reaction");
+    const timerFill = document.getElementById("timerFill");
+    const feedback = document.getElementById("feedback");
+    const difficulty = document.getElementById("difficulty");
+    const difficultyText = document.getElementById("difficultyText");
+    const targetTone = document.getElementById("targetTone");
+    const targetToneText = document.getElementById("targetToneText");
+    const targetSize = document.getElementById("targetSize");
+    const targetSizeText = document.getElementById("targetSizeText");
+    const deadzone = document.getElementById("deadzone");
+    const deadzoneText = document.getElementById("deadzoneText");
+    const apmSpread = document.getElementById("apmSpread");
+    const apmSpreadText = document.getElementById("apmSpreadText");
+    const focusSpeed = document.getElementById("focusSpeed");
+    const focusSpeedText = document.getElementById("focusSpeedText");
+    const volume = document.getElementById("volume");
+    const volumeText = document.getElementById("volumeText");
+    const ackSafetyBtn = document.getElementById("ackSafetyBtn");
+    const startBtn = document.getElementById("startBtn");
+    const retryBtn = document.getElementById("retryBtn");
+    const menuBtn = document.getElementById("menuBtn");
+    const calmBtn = document.getElementById("calmBtn");
+    const movingFocusBtn = document.getElementById("movingFocusBtn");
+    const gridShotBtn = document.getElementById("gridShotBtn");
+    const apmBtn = document.getElementById("apmBtn");
+    const soundBtn = document.getElementById("soundBtn");
+    const resultScore = document.getElementById("resultScore");
+    const resultScoreLabel = document.getElementById("resultScoreLabel");
+    const resultAccuracy = document.getElementById("resultAccuracy");
+    const resultCombo = document.getElementById("resultCombo");
+    const resultReaction = document.getElementById("resultReaction");
+    const rankingTitle = document.getElementById("rankingTitle");
+    const rankingList = document.getElementById("rankingList");
+    const resultRankingTitle = document.getElementById("resultRankingTitle");
+    const resultRankingList = document.getElementById("resultRankingList");
+    const cursorPanelBtn = document.getElementById("cursorPanelBtn");
+    const cursorPanel = document.getElementById("cursorPanel");
+    const cursorPanelClose = document.getElementById("cursorPanelClose");
+    const releaseNotesBtn = document.getElementById("releaseNotesBtn");
+    const releaseNotesPanel = document.getElementById("releaseNotesPanel");
+    const releaseNotesClose = document.getElementById("releaseNotesClose");
+
+    const difficultyLabels = ["ゆっくり", "やさしい", "標準", "速い", "高速"];
+    const focusSpeedLabels = ["かなり遅い", "遅い", "標準", "少し速い", "速い", "かなり速い", "高速", "超高速", "反射", "反射+", "反射++", "限界", "限界+", "限界++"];
+    const leaderboardKey = "peripheralVisionTrainer.rankings.v1";
+    const deadzoneLabels = [
+      [18, "狭め"],
+      [26, "標準"],
+      [34, "広め"],
+      [42, "かなり広め"]
+    ];
+    const apmSpreadLabels = [
+      [44, "狭め"],
+      [60, "標準"],
+      [76, "広め"],
+      [92, "最大"]
+    ];
+    const apmStartNumber = 5;
+    const apmScoreMultiplier = 1.8;
+
+    let state = {
+      duration: 60,
+      remaining: 60,
+      playing: false,
+      score: 0,
+      sessionDuration: 60,
+      attempts: 0,
+      hits: 0,
+      combo: 0,
+      bestCombo: 0,
+      reactions: [],
+      target: null,
+      targetPoint: null,
+      targets: [],
+      targetBorn: 0,
+      targetTimeout: null,
+      targetTimeouts: [],
+      gameTimer: null,
+      feedbackTimer: null,
+      startedAt: 0,
+      apmStartedAt: 0,
+      safetyAccepted: false,
+      calm: false,
+      gridShot: false,
+      apmMode: false,
+      apmNext: apmStartNumber,
+      sound: true,
+      volume: 0.7,
+      targetTone: 1,
+      targetSizeScale: 1,
+      lastPreviewSound: 0,
+      cursorStyle: "cross",
+      audioContext: null,
+      movingFocus: false,
+      rankingStore: {},
+      focusAnimation: null,
+      focus: { x: 0.5, y: 0.5 },
+      focusFrom: { x: 0.5, y: 0.5 },
+      focusTo: { x: 0.5, y: 0.5 },
+      focusStarted: 0,
+      focusDuration: 4200,
+      focusPauseUntil: 0
+    };
+
+    function updateOptions() {
+      difficultyText.textContent = difficultyLabels[Number(difficulty.value) - 1];
+      focusSpeedText.textContent = focusSpeedLabels[Number(focusSpeed.value) - 1];
+      state.volume = Number(volume.value) / 100;
+      volumeText.textContent = `${volume.value}%`;
+      const tone = Number(targetTone.value) / 100;
+      state.targetTone = tone;
+      targetToneText.textContent = `${targetTone.value}%`;
+      stage.style.setProperty("--target-opacity", (0.45 + tone * 0.55).toFixed(2));
+      stage.style.setProperty("--target-saturation", (0.22 + tone * 0.78).toFixed(2));
+      stage.style.setProperty("--target-brightness", (0.84 + tone * 0.16).toFixed(2));
+      stage.style.setProperty("--target-glow-strong", (0.08 + tone * 0.2).toFixed(2));
+      stage.style.setProperty("--target-glow-soft", (0.03 + tone * 0.09).toFixed(2));
+      const sizePercent = Number(targetSize.value);
+      state.targetSizeScale = sizePercent / 100;
+      targetSizeText.textContent = sizePercent === 100 ? "標準" : `${sizePercent}%`;
+      const zone = Number(deadzone.value);
+      const label = deadzoneLabels.find(([limit]) => zone <= limit)?.[1] || "最大";
+      deadzoneText.textContent = label;
+      const spread = Number(apmSpread.value);
+      apmSpreadText.textContent = apmSpreadLabels.find(([limit]) => spread <= limit)?.[1] || "最大";
+      renderRanking();
+    }
+
+    function showModeHelp(text) {
+      modeHelp.textContent = text;
+      modeHelp.classList.add("show");
+    }
+
+    function hideModeHelp() {
+      modeHelp.classList.remove("show");
+    }
+
+    function setCursorStyle(style) {
+      state.cursorStyle = style;
+      cursorAim.classList.remove("dot", "ring", "bright");
+      if (style !== "cross") {
+        cursorAim.classList.add(style);
+      }
+      document.querySelectorAll("[data-cursor-style]").forEach((button) => {
+        button.setAttribute("aria-pressed", String(button.dataset.cursorStyle === style));
+      });
+    }
+
+    function audioNow() {
+      if (!state.sound || state.volume <= 0) return null;
+      const AudioContext = window.AudioContext || window.webkitAudioContext;
+      if (!AudioContext) return null;
+      if (!state.audioContext) {
+        state.audioContext = new AudioContext();
+      }
+      if (state.audioContext.state === "suspended") {
+        state.audioContext.resume();
+      }
+      return state.audioContext.currentTime;
+    }
+
+    function playTone({ frequency, start, duration, type = "sine", gain = 0.08, detune = 0 }) {
+      const context = state.audioContext;
+      if (!context) return;
+      const oscillator = context.createOscillator();
+      const volume = context.createGain();
+      oscillator.type = type;
+      oscillator.frequency.setValueAtTime(frequency, start);
+      oscillator.detune.setValueAtTime(detune, start);
+      volume.gain.setValueAtTime(0.0001, start);
+      volume.gain.exponentialRampToValueAtTime(gain * state.volume, start + 0.012);
+      volume.gain.exponentialRampToValueAtTime(0.0001, start + duration);
+      oscillator.connect(volume);
+      volume.connect(context.destination);
+      oscillator.start(start);
+      oscillator.stop(start + duration + 0.03);
+    }
+
+    function playPopTone(start, frequency, duration, gain = 0.09) {
+      const context = state.audioContext;
+      if (!context) return;
+      const oscillator = context.createOscillator();
+      const body = context.createOscillator();
+      const filter = context.createBiquadFilter();
+      const volume = context.createGain();
+      oscillator.type = "sine";
+      body.type = "triangle";
+      oscillator.frequency.setValueAtTime(frequency * 1.65, start);
+      oscillator.frequency.exponentialRampToValueAtTime(frequency, start + duration * 0.55);
+      body.frequency.setValueAtTime(frequency * 0.5, start);
+      filter.type = "lowpass";
+      filter.frequency.setValueAtTime(980, start);
+      filter.frequency.exponentialRampToValueAtTime(420, start + duration);
+      volume.gain.setValueAtTime(0.0001, start);
+      volume.gain.exponentialRampToValueAtTime(gain * state.volume, start + 0.008);
+      volume.gain.exponentialRampToValueAtTime(0.0001, start + duration);
+      oscillator.connect(filter);
+      body.connect(filter);
+      filter.connect(volume);
+      volume.connect(context.destination);
+      oscillator.start(start);
+      body.start(start);
+      oscillator.stop(start + duration + 0.03);
+      body.stop(start + duration + 0.03);
+    }
+
+    function playNoise(start, duration, gain = 0.035) {
+      const context = state.audioContext;
+      if (!context) return;
+      const sampleCount = Math.max(1, Math.floor(context.sampleRate * duration));
+      const buffer = context.createBuffer(1, sampleCount, context.sampleRate);
+      const data = buffer.getChannelData(0);
+      for (let i = 0; i < sampleCount; i += 1) {
+        data[i] = (Math.random() * 2 - 1) * (1 - i / sampleCount);
+      }
+      const source = context.createBufferSource();
+      const filter = context.createBiquadFilter();
+      const volume = context.createGain();
+      filter.type = "highpass";
+      filter.frequency.setValueAtTime(900, start);
+      volume.gain.setValueAtTime(gain * state.volume, start);
+      volume.gain.exponentialRampToValueAtTime(0.0001, start + duration);
+      source.buffer = buffer;
+      source.connect(filter);
+      filter.connect(volume);
+      volume.connect(context.destination);
+      source.start(start);
+    }
+
+    function playSound(kind) {
+      const now = audioNow();
+      if (now === null) return;
+      if (kind === "hit") {
+        playPopTone(now, 340, 0.075, 0.06);
+      }
+      if (kind === "miss") {
+        playTone({ frequency: 190, start: now, duration: 0.12, type: "sawtooth", gain: 0.035 });
+        playTone({ frequency: 140, start: now + 0.04, duration: 0.13, type: "triangle", gain: 0.025 });
+      }
+      if (kind === "start") {
+        playTone({ frequency: 440, start: now, duration: 0.08, type: "triangle", gain: 0.045 });
+        playTone({ frequency: 660, start: now + 0.07, duration: 0.1, type: "triangle", gain: 0.05 });
+      }
+      if (kind === "end") {
+        playTone({ frequency: 880, start: now, duration: 0.1, type: "sine", gain: 0.05 });
+        playTone({ frequency: 660, start: now + 0.09, duration: 0.12, type: "sine", gain: 0.045 });
+        playTone({ frequency: 520, start: now + 0.19, duration: 0.18, type: "triangle", gain: 0.04 });
+      }
+      if (kind === "toggle") {
+        playTone({ frequency: 520, start: now, duration: 0.06, type: "sine", gain: 0.035 });
+      }
+      if (kind === "preview") {
+        playTone({ frequency: 620, start: now, duration: 0.04, type: "sine", gain: 0.018 });
+      }
+    }
+
+    function playMenuPreviewSound() {
+      if (state.playing) return;
+      const now = performance.now();
+      if (now - state.lastPreviewSound < 160) return;
+      state.lastPreviewSound = now;
+      playSound("preview");
+    }
+
+    function eventName() {
+      if (state.apmMode && state.movingFocus) return "APM + 中心移動";
+      if (state.apmMode) return "APM";
+      if (state.gridShot && state.movingFocus) return "GridShot + 中心移動";
+      if (state.gridShot) return "GridShot";
+      if (state.movingFocus) return "中心移動";
+      return "通常";
+    }
+
+    function eventKey(duration = state.duration) {
+      const mode = state.apmMode ? "apm-arealme" : state.gridShot ? "grid" : "single";
+      return `${mode}-${state.movingFocus ? "moving" : "static"}-${duration}`;
+    }
+
+    function rankingLabel(duration = state.duration) {
+      return `${eventName()} / ${duration}秒`;
+    }
+
+    function readRankings() {
+      try {
+        state.rankingStore = JSON.parse(localStorage.getItem(leaderboardKey) || "{}");
+        return state.rankingStore;
+      } catch {
+        return state.rankingStore;
+      }
+    }
+
+    function writeRankings(rankings) {
+      state.rankingStore = rankings;
+      try {
+        localStorage.setItem(leaderboardKey, JSON.stringify(rankings));
+      } catch {
+        // Ranking persistence is optional when browser storage is unavailable.
+      }
+    }
+
+    function saveRanking(avgReaction, accuracy, duration = state.duration) {
+      const rankings = readRankings();
+      const key = eventKey(duration);
+      const entry = {
+        score: state.score,
+        accuracy,
+        reaction: avgReaction,
+        date: new Date().toLocaleDateString("ja-JP"),
+        duration,
+        difficulty: difficultyText.textContent,
+        focusSpeed: state.movingFocus ? focusSpeedText.textContent : "-"
+      };
+      const list = [...(rankings[key] || []), entry]
+        .sort((a, b) => b.score - a.score || b.accuracy - a.accuracy || a.reaction - b.reaction)
+        .slice(0, 5);
+      rankings[key] = list;
+      writeRankings(rankings);
+      return list;
+    }
+
+    function renderRanking(list = null, targetTitle = rankingTitle, targetList = rankingList, duration = state.duration) {
+      const rankings = readRankings();
+      const displayDuration = list?.[0]?.duration || duration;
+      const rows = list || rankings[eventKey(displayDuration)] || [];
+      targetTitle.textContent = `${rankingLabel(displayDuration)} Ranking`;
+      targetList.innerHTML = "";
+      if (!rows.length) {
+        const empty = document.createElement("li");
+        empty.className = "ranking-empty";
+        empty.textContent = "No Records";
+        targetList.appendChild(empty);
+        return;
+      }
+      rows.forEach((row, index) => {
+        const item = document.createElement("li");
+        item.innerHTML = `<span>#${index + 1}</span><strong>${row.score}</strong><span>${row.accuracy}%</span><span>${row.reaction}ms</span>`;
+        item.title = `${row.date} / ${row.difficulty} / ${row.focusSpeed}`;
+        targetList.appendChild(item);
+      });
+    }
+
+    function setDuration(seconds) {
+      state.duration = seconds;
+      state.remaining = seconds;
+      if (!state.playing) {
+        state.sessionDuration = seconds;
+      }
+      timeEl.textContent = seconds;
+      document.querySelectorAll("[data-duration]").forEach((button) => {
+        button.setAttribute("aria-pressed", String(Number(button.dataset.duration) === seconds));
+      });
+      renderRanking();
+    }
+
+    function resetStats() {
+      state.score = 0;
+      state.attempts = 0;
+      state.hits = 0;
+      state.combo = 0;
+      state.bestCombo = 0;
+      state.reactions = [];
+      state.remaining = state.duration;
+      state.startedAt = 0;
+      state.apmStartedAt = 0;
+      syncScoreLabels();
+      scoreEl.textContent = "0";
+      timeEl.textContent = state.duration;
+      accuracyEl.textContent = "100%";
+      comboEl.textContent = "0";
+      reactionEl.textContent = "0ms";
+      timerFill.style.transform = "scaleX(1)";
+      feedback.classList.remove("show");
+    }
+
+    function showSafetyNotice() {
+      state.safetyAccepted = false;
+      safetyPanel.classList.remove("hidden");
+      titleBlock.classList.add("hidden");
+      controls.classList.add("hidden");
+      results.classList.remove("show");
+      menu.style.pointerEvents = "auto";
+    }
+
+    function showMainMenu() {
+      state.safetyAccepted = true;
+      safetyPanel.classList.add("hidden");
+      titleBlock.classList.remove("hidden");
+      controls.classList.remove("hidden");
+      results.classList.remove("show");
+      menu.style.pointerEvents = "auto";
+      renderRanking();
+    }
+
+    function showFeedback(text, good = true) {
+      clearTimeout(state.feedbackTimer);
+      feedback.textContent = text;
+      feedback.style.color = good ? "rgba(112, 243, 154, 0.96)" : "rgba(255, 95, 109, 0.96)";
+      feedback.classList.add("show");
+      state.feedbackTimer = setTimeout(() => feedback.classList.remove("show"), 420);
+    }
+
+    function syncScoreLabels() {
+      scoreLabel.textContent = state.apmMode ? "APM" : "SCORE";
+      resultScoreLabel.textContent = state.apmMode ? "APM" : "Score";
+    }
+
+    function currentScoreValue() {
+      if (!state.apmMode) return state.hits;
+      if (!state.apmStartedAt || !state.hits) return 0;
+      const elapsedMs = Math.max(1000, performance.now() - state.apmStartedAt);
+      return Math.round((state.hits / elapsedMs) * 60000 * apmScoreMultiplier);
+    }
+
+    function updateHud() {
+      const accuracy = state.attempts ? Math.round((state.hits / state.attempts) * 100) : 100;
+      const avg = state.reactions.length
+        ? Math.round(state.reactions.reduce((sum, value) => sum + value, 0) / state.reactions.length)
+        : 0;
+      state.score = currentScoreValue();
+      syncScoreLabels();
+      scoreEl.textContent = state.score;
+      accuracyEl.textContent = `${accuracy}%`;
+      comboEl.textContent = state.combo;
+      reactionEl.textContent = `${avg}ms`;
+    }
+
+    function clearTarget() {
+      if (state.target) {
+        state.target.remove();
+        state.target = null;
+      }
+      state.targets.forEach((target) => target.element.remove());
+      state.targets = [];
+      state.targetPoint = null;
+      clearTimeout(state.targetTimeout);
+      state.targetTimeouts.forEach((timeout) => clearTimeout(timeout));
+      state.targetTimeouts = [];
+    }
+
+    function removeTarget(targetRecord) {
+      targetRecord.element.remove();
+      state.targets = state.targets.filter((target) => target !== targetRecord);
+      if (state.target === targetRecord.element) {
+        state.target = null;
+        state.targetPoint = null;
+      }
+    }
+
+    function setFocusPosition(x, y) {
+      state.focus.x = x;
+      state.focus.y = y;
+      stage.style.setProperty("--focus-x", `${x * 100}%`);
+      stage.style.setProperty("--focus-y", `${y * 100}%`);
+    }
+
+    function pickNextFocusPoint() {
+      const speed = Number(focusSpeed.value);
+      state.focusFrom = { ...state.focus };
+      const edgePadding = speed >= 11 ? 0.14 : 0.18;
+      const minTravel = speed >= 11 ? 0.29 : 0.2;
+      let next = { x: 0.5, y: 0.5 };
+
+      for (let i = 0; i < 40; i += 1) {
+        const candidate = {
+          x: edgePadding + Math.random() * (1 - edgePadding * 2),
+          y: edgePadding + Math.random() * (1 - edgePadding * 2)
+        };
+        const distance = Math.hypot(candidate.x - state.focus.x, candidate.y - state.focus.y);
+        if (distance >= minTravel) {
+          next = candidate;
+          break;
+        }
+        next = candidate;
+      }
+
+      state.focusTo = next;
+      state.focusStarted = performance.now();
+      const baseDuration = speed <= 8
+        ? 6200 - speed * 560
+        : 1240 - (speed - 8) * 95;
+      const jitter = speed <= 8
+        ? Math.max(180, 1400 - speed * 120)
+        : Math.max(80, 260 - (speed - 8) * 18);
+      state.focusDuration = Math.max(430, baseDuration + Math.random() * jitter);
+    }
+
+    function animateFocus(now = performance.now()) {
+      if (!state.movingFocus) return;
+      if (state.focusPauseUntil && now < state.focusPauseUntil) {
+        state.focusAnimation = requestAnimationFrame(animateFocus);
+        return;
+      }
+      const t = Math.min(1, (now - state.focusStarted) / state.focusDuration);
+      const eased = t < 0.5
+        ? 4 * t * t * t
+        : 1 - Math.pow(-2 * t + 2, 3) / 2;
+      const x = state.focusFrom.x + (state.focusTo.x - state.focusFrom.x) * eased;
+      const y = state.focusFrom.y + (state.focusTo.y - state.focusFrom.y) * eased;
+      setFocusPosition(x, y);
+      if (t >= 1) {
+        const speed = Number(focusSpeed.value);
+        state.focusPauseUntil = now + Math.max(120, 680 - speed * 38);
+        pickNextFocusPoint();
+        state.focusStarted = state.focusPauseUntil;
+      }
+      state.focusAnimation = requestAnimationFrame(animateFocus);
+    }
+
+    function startFocusMotion() {
+      cancelAnimationFrame(state.focusAnimation);
+      stage.classList.toggle("focus-moving", state.movingFocus);
+      if (!state.movingFocus) {
+        setFocusPosition(0.5, 0.5);
+        return;
+      }
+      pickNextFocusPoint();
+      state.focusAnimation = requestAnimationFrame(animateFocus);
+    }
+
+    function targetSizeForViewport() {
+      const rect = stage.getBoundingClientRect();
+      const minViewport = Math.min(rect.width, rect.height);
+      const base = minViewport * 0.14;
+      const scale = Number(targetSize.value) / 100;
+      return Math.round(Math.min(212, Math.max(74, base * scale)));
+    }
+
+    function makeBurst(x, y, size, className) {
+      const burst = document.createElement("div");
+      burst.className = className;
+      burst.style.setProperty("--x", `${x}px`);
+      burst.style.setProperty("--y", `${y}px`);
+      burst.style.setProperty("--size", `${size}px`);
+      stage.appendChild(burst);
+      setTimeout(() => burst.remove(), 420);
+    }
+
+    function chooseTargetPosition(size) {
+      const rect = stage.getBoundingClientRect();
+      const centerX = rect.width * state.focus.x;
+      const centerY = rect.height * state.focus.y;
+      const marginTop = Math.max(72, size);
+      const marginBottom = Math.max(62, size);
+      const marginSide = Math.max(34, size);
+      const minViewport = Math.min(rect.width, rect.height);
+      const minDistance = minViewport * (Number(deadzone.value) / 100);
+      const apmMaxDistance = Math.max(minDistance + size * 1.8, minViewport * (Number(apmSpread.value) / 100));
+      const maxAttempts = state.apmMode ? 240 : 80;
+
+      for (let i = 0; i < maxAttempts; i += 1) {
+        let x;
+        let y;
+        let distance;
+        if (state.apmMode) {
+          const angle = Math.random() * Math.PI * 2;
+          const radius = minDistance + Math.random() * Math.max(size, apmMaxDistance - minDistance);
+          x = centerX + Math.cos(angle) * radius;
+          y = centerY + Math.sin(angle) * radius;
+          if (x < marginSide || x > rect.width - marginSide || y < marginTop || y > rect.height - marginBottom) {
+            continue;
+          }
+          distance = radius;
+        } else {
+          x = marginSide + Math.random() * (rect.width - marginSide * 2);
+          y = marginTop + Math.random() * (rect.height - marginTop - marginBottom);
+          distance = Math.hypot(x - centerX, y - centerY);
+        }
+        const overlaps = !state.apmMode && state.targets.some((target) => Math.hypot(x - target.x, y - target.y) < size * 1.35);
+        if (distance >= minDistance && (!state.apmMode || distance <= apmMaxDistance) && !overlaps) {
+          return { x, y };
+        }
+      }
+
+      const angle = Math.random() * Math.PI * 2;
+      const distance = state.apmMode
+        ? minDistance + Math.random() * Math.max(size, apmMaxDistance - minDistance)
+        : minDistance + Math.random() * Math.max(30, Math.min(rect.width, rect.height) * 0.28);
+      const x = Math.min(rect.width - marginSide, Math.max(marginSide, centerX + Math.cos(angle) * distance));
+      const y = Math.min(rect.height - marginBottom, Math.max(marginTop, centerY + Math.sin(angle) * distance));
+      return { x, y };
+    }
+
+    function createTarget(label = "", order = null) {
+      if (!state.playing) return;
+
+      const level = Number(difficulty.value);
+      const size = targetSizeForViewport();
+      const { x, y } = chooseTargetPosition(size);
+      const target = document.createElement("button");
+      target.className = "target";
+      if (state.apmMode && order === apmStartNumber) {
+        target.classList.add("apm-lead");
+      }
+      target.type = "button";
+      target.setAttribute("aria-label", label ? `的 ${label}` : "的");
+      target.style.setProperty("--x", `${x}px`);
+      target.style.setProperty("--y", `${y}px`);
+      target.style.setProperty("--size", `${size}px`);
+      if (state.apmMode && order) {
+        target.style.zIndex = String(20 + order);
+      }
+      if (label) {
+        const labelEl = document.createElement("span");
+        labelEl.className = "target-label";
+        if (label.length > 1) {
+          labelEl.classList.add("wide");
+        }
+        labelEl.textContent = label;
+        target.appendChild(labelEl);
+      }
+      stage.appendChild(target);
+      const targetRecord = { element: target, x, y, size, born: performance.now(), label, order };
+      state.targets.push(targetRecord);
+      if (!state.gridShot && !state.apmMode) {
+        state.target = target;
+        state.targetPoint = { x, y, size };
+        state.targetBorn = targetRecord.born;
+      }
+
+      target.addEventListener("pointerdown", (event) => {
+        if (event.button !== 0 && event.button !== 2) return;
+        event.preventDefault();
+        event.stopPropagation();
+        handleTargetPress(targetRecord);
+      });
+
+      return targetRecord;
+    }
+
+    function spawnTarget() {
+      if (!state.playing) return;
+      clearTarget();
+      if (state.apmMode) {
+        fillApmTargets();
+        return;
+      }
+      if (state.gridShot) {
+        fillGridTargets();
+        return;
+      }
+      createTarget();
+    }
+
+    function fillGridTargets() {
+      if (!state.playing || !state.gridShot) return;
+      while (state.targets.length < 3) {
+        createTarget();
+      }
+    }
+
+    function fillApmTargets() {
+      if (!state.playing || !state.apmMode) return;
+      clearTarget();
+      state.apmNext = apmStartNumber;
+      for (let number = apmStartNumber; number >= 1; number -= 1) {
+        createTarget(String(number), number);
+      }
+    }
+
+    function handleTargetPress(targetRecord) {
+      if (!targetRecord || !state.playing) return;
+      if (state.apmMode) {
+        if (targetRecord.order !== state.apmNext) {
+          registerMiss(targetRecord.x, targetRecord.y, Math.max(54, targetRecord.size * 0.52), false);
+          showFeedback(`${state.apmNext} FIRST`, false);
+          return;
+        }
+
+        if (!state.apmStartedAt) {
+          state.apmStartedAt = performance.now();
+        }
+        registerHit(targetRecord.x, targetRecord.y, targetRecord.size, targetRecord);
+        state.apmNext -= 1;
+        if (state.apmNext < 1) {
+          fillApmTargets();
+          showFeedback("NEXT SET", true);
+        } else {
+          showFeedback(`NEXT ${state.apmNext}`, true);
+        }
+        return;
+      }
+
+      registerHit(targetRecord.x, targetRecord.y, targetRecord.size, targetRecord);
+    }
+
+    function registerHit(x, y, size, targetRecord = null) {
+      if (!state.playing) return;
+      const reaction = Math.round(performance.now() - (targetRecord?.born ?? state.targetBorn));
+      state.attempts += 1;
+      state.hits += 1;
+      state.combo += 1;
+      state.bestCombo = Math.max(state.bestCombo, state.combo);
+      state.reactions.push(reaction);
+      state.score = currentScoreValue();
+      makeBurst(x, y, size, "hit-burst");
+      playSound("hit");
+      if ((state.gridShot || state.apmMode) && targetRecord) {
+        removeTarget(targetRecord);
+      } else {
+        clearTarget();
+      }
+      updateHud();
+      showFeedback("HIT", true);
+      if (state.gridShot) {
+        fillGridTargets();
+      } else if (state.apmMode) {
+        return;
+      } else {
+        setTimeout(spawnTarget, Math.max(120, 360 - Number(difficulty.value) * 38));
+      }
+    }
+
+    function registerMiss(x, y, size, expired = false) {
+      if (!state.playing) return;
+      state.attempts += 1;
+      state.combo = 0;
+      makeBurst(x, y, size, "miss-burst");
+      playSound("miss");
+      if (!state.gridShot && !state.apmMode) {
+        clearTarget();
+      }
+      updateHud();
+      showFeedback(expired ? "MISS" : "WIDE SHOT", false);
+      if (state.gridShot) {
+        fillGridTargets();
+      } else if (state.apmMode) {
+        return;
+      } else {
+        setTimeout(spawnTarget, 260);
+      }
+    }
+
+    function startGame() {
+      clearInterval(state.gameTimer);
+      clearTarget();
+      state.sessionDuration = state.duration;
+      resetStats();
+      playSound("start");
+      state.playing = true;
+      state.startedAt = performance.now();
+      stage.classList.add("playing");
+      titleBlock.classList.add("hidden");
+      controls.classList.add("hidden");
+      results.classList.remove("show");
+      menu.style.pointerEvents = "none";
+      spawnTarget();
+
+      state.gameTimer = setInterval(() => {
+        state.remaining -= 1;
+        timeEl.textContent = state.remaining;
+        timerFill.style.transform = `scaleX(${Math.max(0, state.remaining / state.duration)})`;
+        updateHud();
+        if (state.remaining <= 0) {
+          endGame();
+        }
+      }, 1000);
+    }
+
+    function endGame() {
+      state.playing = false;
+      playSound("end");
+      clearInterval(state.gameTimer);
+      clearTarget();
+      stage.classList.remove("playing");
+      const completedDuration = state.sessionDuration || state.duration;
+      const accuracy = state.attempts ? Math.round((state.hits / state.attempts) * 100) : 0;
+      const avg = state.reactions.length
+        ? Math.round(state.reactions.reduce((sum, value) => sum + value, 0) / state.reactions.length)
+        : 0;
+      state.score = currentScoreValue();
+      resultScore.textContent = state.score;
+      resultAccuracy.textContent = `${accuracy}%`;
+      resultCombo.textContent = state.bestCombo;
+      resultReaction.textContent = `${avg}ms`;
+      const savedList = saveRanking(avg, accuracy, completedDuration);
+      renderRanking(savedList, resultRankingTitle, resultRankingList, completedDuration);
+      renderRanking();
+      menu.style.pointerEvents = "auto";
+      titleBlock.classList.add("hidden");
+      controls.classList.add("hidden");
+      results.classList.add("show");
+    }
+
+    function showMenu() {
+      state.playing = false;
+      clearInterval(state.gameTimer);
+      clearTarget();
+      stage.classList.remove("playing");
+      showMainMenu();
+      resetStats();
+    }
+
+    stage.addEventListener("pointerdown", (event) => {
+      if (!state.playing) return;
+      if (event.button !== 0 && event.button !== 2) return;
+      if (event.target.closest(".target")) return;
+      if (event.target.closest(".cursor-panel, .cursor-panel-toggle, .release-panel, .release-toggle, .audio-control, .hud-bottom")) return;
+      event.preventDefault();
+      cursorAim.classList.add("click");
+      setTimeout(() => cursorAim.classList.remove("click"), 90);
+      if ((state.gridShot || state.apmMode) && state.targets.length) {
+        const nearest = state.targets
+          .map((target) => ({
+            target,
+            distance: Math.hypot(event.clientX - target.x, event.clientY - target.y)
+          }))
+          .sort((a, b) => a.distance - b.distance)[0];
+        const forgivingRadius = nearest.target.size * 0.88;
+        if (nearest.distance <= forgivingRadius) {
+          handleTargetPress(nearest.target);
+        } else {
+          registerMiss(event.clientX, event.clientY, Math.max(54, nearest.target.size * 0.52), false);
+        }
+        return;
+      }
+      if (state.targetPoint) {
+        const distance = Math.hypot(event.clientX - state.targetPoint.x, event.clientY - state.targetPoint.y);
+        const forgivingRadius = state.targetPoint.size * 0.88;
+        if (distance <= forgivingRadius) {
+          registerHit(state.targetPoint.x, state.targetPoint.y, state.targetPoint.size);
+        } else {
+          registerMiss(event.clientX, event.clientY, Math.max(54, state.targetPoint.size * 0.52), false);
+        }
+        return;
+      }
+      showFeedback("WAIT FOR TARGET", false);
+    });
+
+    function updateCursorPosition(event) {
+      cursorAim.style.setProperty("--cursor-x", `${event.clientX}px`);
+      cursorAim.style.setProperty("--cursor-y", `${event.clientY}px`);
+      cursorAim.classList.add("show");
+    }
+
+    stage.addEventListener("pointermove", updateCursorPosition, { passive: true });
+    if ("onpointerrawupdate" in window) {
+      stage.addEventListener("pointerrawupdate", updateCursorPosition, { passive: true });
+    }
+
+    stage.addEventListener("pointerleave", () => {
+      cursorAim.classList.remove("show");
+    });
+
+    stage.addEventListener("contextmenu", (event) => {
+      event.preventDefault();
+    });
+
+    document.addEventListener("contextmenu", (event) => {
+      if (stage.contains(event.target)) {
+        event.preventDefault();
+        event.stopPropagation();
+      }
+    }, true);
+
+    document.addEventListener("keydown", (event) => {
+      if (event.key === "Escape") {
+        showMenu();
+      }
+      if ((event.key === " " || event.key === "Enter") && !state.playing && !results.classList.contains("show") && state.safetyAccepted) {
+        startGame();
+      }
+    });
+
+    document.querySelectorAll("[data-duration]").forEach((button) => {
+      button.addEventListener("click", () => setDuration(Number(button.dataset.duration)));
+    });
+
+    document.querySelectorAll(".helpable").forEach((item) => {
+      item.addEventListener("mouseenter", () => {
+        showModeHelp(item.dataset.help);
+        playMenuPreviewSound();
+      });
+      item.addEventListener("focusin", () => {
+        showModeHelp(item.dataset.help);
+        playMenuPreviewSound();
+      });
+      item.addEventListener("mouseleave", hideModeHelp);
+      item.addEventListener("focusout", hideModeHelp);
+    });
+
+    document.querySelectorAll("[data-cursor-style]").forEach((button) => {
+      button.addEventListener("click", () => {
+        setCursorStyle(button.dataset.cursorStyle);
+        playSound("toggle");
+      });
+    });
+
+    function updateShotModeButtons() {
+      gridShotBtn.setAttribute("aria-pressed", String(state.gridShot));
+      gridShotBtn.textContent = state.gridShot ? "GridShot ON" : "GridShot";
+      apmBtn.setAttribute("aria-pressed", String(state.apmMode));
+      apmBtn.textContent = state.apmMode ? "APM ON" : "APM";
+      syncScoreLabels();
+    }
+
+    function setReleaseNotesOpen(open) {
+      releaseNotesPanel.classList.toggle("open", open);
+      releaseNotesBtn.setAttribute("aria-expanded", String(open));
+    }
+
+    cursorPanelBtn.addEventListener("click", () => {
+      cursorPanel.classList.toggle("open");
+    });
+
+    cursorPanelClose.addEventListener("click", () => {
+      cursorPanel.classList.remove("open");
+    });
+
+    cursorPanel.addEventListener("pointerdown", (event) => {
+      event.stopPropagation();
+    });
+
+    releaseNotesBtn.addEventListener("click", () => {
+      setReleaseNotesOpen(!releaseNotesPanel.classList.contains("open"));
+    });
+
+    releaseNotesClose.addEventListener("click", () => {
+      setReleaseNotesOpen(false);
+    });
+
+    releaseNotesPanel.addEventListener("pointerdown", (event) => {
+      event.stopPropagation();
+    });
+
+    difficulty.addEventListener("input", updateOptions);
+    targetTone.addEventListener("input", updateOptions);
+    targetSize.addEventListener("input", updateOptions);
+    deadzone.addEventListener("input", updateOptions);
+    apmSpread.addEventListener("input", updateOptions);
+    focusSpeed.addEventListener("input", () => {
+      updateOptions();
+      if (state.movingFocus) {
+        pickNextFocusPoint();
+      }
+    });
+    volume.addEventListener("input", () => {
+      updateOptions();
+      playMenuPreviewSound();
+    });
+    ackSafetyBtn.addEventListener("click", showMainMenu);
+    startBtn.addEventListener("click", startGame);
+    retryBtn.addEventListener("click", startGame);
+    menuBtn.addEventListener("click", showMenu);
+    calmBtn.addEventListener("click", () => {
+      state.calm = !state.calm;
+      playSound("toggle");
+      calmBtn.setAttribute("aria-pressed", String(state.calm));
+      calmBtn.textContent = state.calm ? "集中モード ON" : "集中モード";
+      stage.style.backgroundSize = state.calm ? "auto, 120px 120px, 120px 120px, auto" : "auto, 72px 72px, 72px 72px, auto";
+    });
+
+    movingFocusBtn.addEventListener("click", () => {
+      state.movingFocus = !state.movingFocus;
+      playSound("toggle");
+      movingFocusBtn.setAttribute("aria-pressed", String(state.movingFocus));
+      movingFocusBtn.textContent = state.movingFocus ? "中心移動 ON" : "中心移動";
+      startFocusMotion();
+      renderRanking();
+    });
+
+    gridShotBtn.addEventListener("click", () => {
+      state.gridShot = !state.gridShot;
+      if (state.gridShot) {
+        state.apmMode = false;
+      }
+      playSound("toggle");
+      updateShotModeButtons();
+      renderRanking();
+      if (state.playing) {
+        spawnTarget();
+      }
+    });
+
+    apmBtn.addEventListener("click", () => {
+      state.apmMode = !state.apmMode;
+      if (state.apmMode) {
+        state.gridShot = false;
+      }
+      state.apmNext = apmStartNumber;
+      playSound("toggle");
+      updateShotModeButtons();
+      renderRanking();
+      if (state.playing) {
+        spawnTarget();
+      }
+    });
+
+    soundBtn.addEventListener("click", () => {
+      state.sound = !state.sound;
+      soundBtn.setAttribute("aria-pressed", String(state.sound));
+      soundBtn.textContent = state.sound ? "Sound ON" : "Sound OFF";
+      if (state.sound) {
+        playSound("toggle");
+      }
+    });
+
+    updateOptions();
+    setDuration(60);
+    setCursorStyle("cross");
+    updateShotModeButtons();
+    resetStats();
+    showSafetyNotice();
+
+    if ("serviceWorker" in navigator && (location.protocol === "https:" || location.hostname === "localhost" || location.hostname === "127.0.0.1")) {
+      window.addEventListener("load", () => {
+        navigator.serviceWorker.register("./sw.js").catch(() => {});
+      });
+    }
+  </script>
+</body>
+</html>

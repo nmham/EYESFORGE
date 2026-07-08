@@ -1,0 +1,23 @@
+{
+  "name": "EYES FORGE",
+  "short_name": "EYES FORGE",
+  "description": "Peripheral vision training game.",
+  "start_url": "./peripheral-vision-trainer.html",
+  "scope": "./",
+  "display": "fullscreen",
+  "background_color": "#171818",
+  "theme_color": "#171818",
+  "orientation": "landscape",
+  "icons": [
+    {
+      "src": "./icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "./icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}
