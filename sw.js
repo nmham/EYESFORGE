@@ -1,4 +1,4 @@
-const CACHE_NAME = "eyes-forge-v0.9.9";
+const CACHE_NAME = "eyes-forge-v0.10.0";
 const APP_FILES = [
   "./",
   "./index.html",
@@ -17,7 +17,10 @@ self.addEventListener("install", (event) => {
 self.addEventListener("activate", (event) => {
   event.waitUntil(
     caches.keys()
-      .then((keys) => Promise.all(keys.filter((key) => key !== CACHE_NAME).map((key) => caches.delete(key))))
+      // CacheStorage is shared by every application on this origin.
+      .then((keys) => Promise.all(keys
+        .filter((key) => /^eyes-forge-v\d+\.\d+\.\d+$/.test(key) && key !== CACHE_NAME)
+        .map((key) => caches.delete(key))))
       .then(() => self.clients.claim())
   );
 });

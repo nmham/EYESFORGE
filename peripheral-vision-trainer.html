@@ -257,6 +257,26 @@
       will-change: transform, opacity;
     }
 
+    .move-zone {
+      position: absolute;
+      z-index: 12;
+      left: var(--x);
+      top: var(--y);
+      width: var(--size);
+      height: var(--size);
+      transform: translate(-50%, -50%);
+      border: 3px dashed #58d7ff;
+      border-radius: 50%;
+      background: rgba(88, 215, 255, 0.18);
+      color: #bcefff;
+      font: 800 20px system-ui, sans-serif;
+      touch-action: none;
+    }
+
+    .move-zone:hover {
+      background: rgba(88, 215, 255, 0.28);
+    }
+
     .cursor-aim {
       --cursor-scale: 1;
       position: fixed;
@@ -303,6 +323,40 @@
 
     .cursor-aim.show {
       opacity: 0.9;
+    }
+
+    .attack-ready .cursor-aim {
+      border-color: var(--orange);
+      contain: layout style;
+    }
+
+    .attack-key {
+      display: none;
+      position: absolute;
+      left: calc(100% + 8px);
+      top: 0;
+      width: 26px;
+      height: 26px;
+      border-radius: 4px;
+      background: #ffcf4a;
+      color: #171818;
+      font: 900 18px/26px system-ui, sans-serif;
+      text-align: center;
+      box-shadow: 0 0 0 2px #171818;
+    }
+
+    .attack-ready .attack-key {
+      display: block;
+    }
+
+    .attack-mode .session-meta {
+      color: #bcefff;
+      font-size: 14px;
+      letter-spacing: 0;
+    }
+
+    .attack-ready .session-meta {
+      color: #ffcf4a;
     }
 
     .cursor-aim.click {
@@ -413,6 +467,10 @@
 
     .target-label.wide {
       font-size: calc(var(--size) * 0.34);
+    }
+
+    .target-label.target-health {
+      font-size: 22px;
     }
 
     .hit-burst {
@@ -935,6 +993,45 @@
       letter-spacing: 0;
     }
 
+    .survival-stat {
+      display: none;
+    }
+
+    .survival-hp {
+      display: none;
+      position: absolute;
+      left: 50%;
+      bottom: 64px;
+      transform: translateX(-50%);
+      z-index: 18;
+      align-items: center;
+      gap: 7px;
+      pointer-events: none;
+      color: #ff7582;
+      font-size: 22px;
+      line-height: 24px;
+    }
+
+    .playing .survival-hp.show {
+      display: flex;
+    }
+
+    .survival-hp small {
+      color: var(--muted);
+      font-size: 10px;
+      margin-right: 3px;
+    }
+
+    .survival-hp .depleted {
+      color: #62686b;
+      opacity: 0.45;
+    }
+
+    .survival-stat.show {
+      display: inline;
+      color: rgba(255, 173, 18, 0.95);
+    }
+
     .results {
       display: none;
       width: min(680px, 100%);
@@ -1122,6 +1219,9 @@
     }
 
     @media (max-width: 720px) {
+      .survival-hp {
+        bottom: 150px;
+      }
       .topbar {
         grid-template-columns: 1fr;
         gap: 8px;
@@ -1197,13 +1297,88 @@
     }
 
     @media (prefers-reduced-motion: reduce) {
-      *,
-      *::before,
-      *::after {
-        animation-duration: 1ms !important;
-        transition-duration: 1ms !important;
+      .safety-panel,
+      .title-block,
+      .control-panel,
+      .results.show {
+        animation: none !important;
+        opacity: 1;
+        transform: none;
       }
+
     }
+    .attack-settings { display: flex; flex-wrap: wrap; align-items: center; gap: 10px 18px; margin: 8px 0; font-size: 12px; }
+    .attack-settings[hidden] { display: none; }
+    .attack-settings label { display: flex; align-items: center; gap: 8px; }
+    .attack-settings input[type="range"] { width: 120px; }
+    .attack-settings output { min-width: 90px; font-variant-numeric: tabular-nums; }
+    .attack-settings select { background: #262a28; color: #f1f3f2; border: 1px solid #565c58; border-radius: 4px; padding: 6px; max-width: 100%; font: inherit; }
+    .aa-motion { position: absolute; z-index: 12; left: var(--x); top: var(--y); width: var(--size); height: var(--size); transform: translate(-50%, -50%); pointer-events: none; color: #ffe59b; }
+    .aa-motion .aa-ring { position: absolute; inset: 0; border: 3px solid currentColor; border-radius: 50%; }
+    .aa-motion .aa-label { position: absolute; left: 50%; top: 100%; transform: translateX(-50%); margin-top: 8px; padding: 3px 7px; background: #171a18; border-radius: 3px; white-space: nowrap; font: 700 12px/1.3 sans-serif; }
+    .aa-motion.queued { color: #a6b7c3; }
+    .aa-motion.queued .aa-ring { border-style: dashed; opacity: .55; }
+    .aa-motion.windup .aa-ring { animation: aaWindup var(--windup) linear both; }
+    .aa-motion.fired { color: #9af0b9; animation: aaFade 360ms ease-out forwards; }
+    .aa-motion.launched { color: #8ae6f5; }
+    .aa-motion.launched .aa-ring { opacity: .25; }
+    .aa-projectile { position: absolute; z-index: 13; left: var(--x); top: var(--y); width: 14px; height: 14px; border-radius: 50%; background: #e7ffff; border: 2px solid #71dce9; box-shadow: 0 0 10px #71dce9; pointer-events: none; animation: aaTravel 180ms linear both; }
+    @keyframes aaTravel { from { transform: translate(-50%, -50%); } to { transform: translate(calc(-50% + var(--dx)), calc(-50% + var(--dy))); } }
+    .aa-motion.fired .aa-ring { animation: aaFire 360ms ease-out forwards; }
+    .aa-motion.cancelled { color: #ff8392; animation: aaFade 600ms ease-in forwards; }
+    .aa-motion.cancelled .aa-ring { border-style: dashed; animation: aaBreak 600ms ease-out forwards; }
+    .aa-motion.cancelled .aa-ring::before, .aa-motion.cancelled .aa-ring::after { content: ""; position: absolute; left: 50%; top: 0; width: 28px; height: 3px; background: currentColor; transform: translate(-50%, -50%) rotate(45deg); }
+    .aa-motion.cancelled .aa-ring::after { transform: translate(-50%, -50%) rotate(-45deg); }
+    @keyframes aaWindup { from { transform: scale(1.25); opacity: .4; } to { transform: scale(1); opacity: 1; } }
+    @keyframes aaFire { from { transform: scale(1); } to { transform: scale(1.22); } }
+    @keyframes aaBreak { to { transform: scale(1.12) rotate(12deg); } }
+    @keyframes aaFade { 0%, 40% { opacity: 1; } 100% { opacity: 0; } }
+    .as-readiness { position: absolute; top: var(--y); left: var(--x); transform: translate(-50%, -50%); width: var(--size); height: var(--size); z-index: 14; pointer-events: none; color: #ffe59b; text-align: center; font: 700 12px/1.5 sans-serif; }
+    .as-readiness[hidden] { display: none; }
+    .as-readiness[data-ready="true"] { color: #9af0b9; }
+    .as-readiness[data-queued="true"] { color: #ff9f87; }
+    .as-readiness-track { position: absolute; inset: -10px; border-radius: 50%; background: #373c38; mask: radial-gradient(farthest-side, transparent calc(100% - 5px), #000 calc(100% - 4px)); }
+    .as-readiness-fill { position: absolute; inset: 0; background: conic-gradient(currentColor var(--progress, 0%), transparent 0); }
+    #asReadinessLabel { position: absolute; top: calc(50% + 18px); left: 8px; right: 8px; }
+    .as-readiness small { position: absolute; top: calc(50% + 37px); left: 8px; right: 8px; min-height: 15px; font-size: 10px; font-variant-numeric: tabular-nums; }
+    .attack-cue { position: absolute; z-index: 15; width: 180px; height: 70px; transform: translateX(-50%); pointer-events: none; text-align: center; color: #9af0b9; font: 700 11px/16px sans-serif; }
+    .attack-cue[hidden] { display: none; }
+    .attack-cue[data-phase="windup"] { color: #ffe59b; }
+    .attack-cue[data-phase="queued"] { color: #ff9f87; }
+    .attack-cue .weapon { position: absolute; left: calc(50% - 6px); top: 2px; width: 12px; height: 12px; border: 2px solid currentColor; background: #1b211e; transform: rotate(45deg) scale(var(--draw, 1)); }
+    .attack-cue b { display: block; padding-top: 20px; font-size: 12px; }
+    .attack-cue .recovery { width: 100px; height: 4px; margin: 4px auto; background: #424b45; }
+    .attack-cue .recovery i { display: block; height: 100%; background: currentColor; transform-origin: left; transform: scaleX(var(--recovery, 1)); }
+    .attack-cue span { display: block; }
+    .aa-motion .aa-label { visibility: hidden; }
+    .aa-motion.cancelled .aa-label { visibility: visible; }
+    #multitaskLayer { position: fixed; inset: 0; z-index: 200; background: #171b19; color: #eff4f0; }
+    #multitaskLayer, #multitaskLayer * { cursor: none !important; }
+    #multitaskLayer[hidden], #multiResult[hidden] { display: none; }
+    #multitaskLayer header { height: 64px; display: flex; align-items: center; gap: 24px; padding: 0 20px; border-bottom: 1px solid #48544b; }
+    #multiScore { font: 700 24px monospace; color: #ffe49f; min-width: 105px; }
+    #multiPhase { color: #9daea4; font-size: 12px; }
+    #multiExit { margin-left: auto; }
+    #multitaskLayer { --multi-width: min(1100px, 84vw); --multi-height: min(720px, 78vh); }
+    #multiCanvas { display: block; position: absolute; left: 50%; top: calc(50% + 20px); transform: translate(-50%, -50%); width: var(--multi-width); height: var(--multi-height); touch-action: none; }
+    #multiResult { position: absolute; left: 50%; top: 50%; transform: translate(-50%,-50%); padding: 28px; width: min(440px,90vw); background: #202922; border: 1px solid #768b7b; border-radius: 8px; text-align: center; }
+    #multiFinal { display: block; font: 700 36px monospace; color: #ffe49f; }
+    @media(max-width:600px) { #multitaskLayer header { gap: 10px; padding: 0 10px; } #multitaskLayer header strong { font-size: 12px; } #multiScore { font-size:18px; min-width:75px; } }
+    #multitaskLayer { background: radial-gradient(circle at center, rgba(255,255,255,.035), transparent 31%), linear-gradient(rgba(255,255,255,.025) 1px, transparent 1px), linear-gradient(90deg,rgba(255,255,255,.021) 1px, transparent 1px), #1b1c1c; background-size: auto,72px 72px,72px 72px,auto; color: var(--text); }
+    #multitaskLayer header { border-color: var(--line); }
+    #multitaskLayer header strong { font-size: 20px; font-weight: 800; }
+    #multiScore { color: var(--text); font-family: inherit; font-size: 22px; font-variant-numeric: tabular-nums; }
+    #multiPhase { color: var(--muted); }
+    #multiTargets { position: absolute; left: 50%; top: calc(50% + 20px); transform: translate(-50%, -50%); width: var(--multi-width); height: var(--multi-height); pointer-events: none; overflow: hidden; }
+    #multiTargets .target { pointer-events: none; }
+    #multiResult { z-index: 30; background: var(--panel); border-color: var(--line); box-shadow: 0 18px 60px var(--shadow); }
+    #multiFinal { color: var(--orange); font-family: inherit; }
+    @media(max-width:600px) { #multitaskLayer header strong { font-size: 14px; } #multiScore { font-size: 18px; } }
+    #multiIntro { position:absolute; z-index:25; width: min(330px, 90%); padding:18px; border:1px solid var(--orange); border-radius:8px; background:rgba(24,26,27,.98); box-shadow:0 12px 36px var(--shadow); transform:translate(-50%,-50%); text-align:center; }
+    #multiIntro[hidden] { display:none; }
+    #multiIntro h3 { margin:0 0 10px; font-size:17px; color:var(--orange); }
+    #multiIntro p { margin:0 0 14px; font-size:13px; line-height:1.7; }
+    #multiIntro .button { min-width:0; padding:10px 20px; }
   </style>
 </head>
 <body>
@@ -1223,7 +1398,7 @@
       <span class="reticle-ring"></span>
       <span class="reticle-core"></span>
     </div>
-    <div class="cursor-aim" id="cursorAim" aria-hidden="true"></div>
+    <div class="cursor-aim" id="cursorAim" aria-hidden="true"><span class="attack-key">A</span></div>
 
     <section class="menu" id="menu" aria-label="ゲームメニュー">
       <div class="menu-inner">
@@ -1282,8 +1457,24 @@
             <button class="button ghost helpable" type="button" id="movingFocusBtn" data-help="中心のレティクルがゆっくり動きます。追視と周辺視野を同時に使う高負荷モードです。">中心移動</button>
             <button class="button ghost helpable" type="button" id="gridShotBtn" data-help="的を常に3つ表示します。撃つとノーディレイで補充されます。">GridShot</button>
             <button class="button ghost helpable" type="button" id="apmBtn" data-help="5から1まで数字の的を順番に撃ちます。5個を消すとすぐ次の5個が出ます。">APM</button>
+            <button class="button ghost helpable" type="button" id="survivalBtn" data-help="3回外したら即ゲームオーバーです。正確さを崩さず撃ち続けるモードです。">Survival</button>
+            <button class="button ghost helpable" type="button" id="attackMoveBtn" aria-pressed="false" data-help="水色のMOVEを右クリックしてから、Aキー→オレンジの的を左クリック。1発ごとにMOVEの右クリックが必要です。">Attack Move</button>
             <button class="button ghost helpable" type="button" id="soundBtn" data-help="効果音のON/OFFです。音量は画面下のVOLで調整できます。">Sound ON</button>
           </div>
+          <div class="attack-settings" id="attackSettings" hidden>
+            <label title="通常攻撃の練習用近似。攻撃間隔の20%が溜め時間で、その間のMOVEは攻撃をキャンセルします。Q・ルーン・装備固有効果は再現しません。"><input id="attackTiming" type="checkbox">AS</label>
+            <select id="attackPreset" aria-label="ASプリセット">
+              <option value="0.65">Lv1相当</option>
+              <option value="0.871">Lv18相当・追加ASなし</option>
+              <option value="1.5">AS 1.5</option>
+              <option value="2">AS 2.0</option>
+              <option value="2.5">AS 2.5</option>
+              <option value="custom" disabled>カスタム</option>
+            </select>
+            <label>AS <input id="attackSpeed" type="range" min="0.5" max="3" step="0.001" value="0.65"><output id="attackSpeedText">0.65 / 1.54秒</output></label>
+          </div>
+          <button class="button ghost helpable" type="button" id="multitaskBtn" aria-pressed="false" data-help="的・WS回避・AD位置キープ・SPACE飛行の4タスク。10秒ごとに追加され、30秒以降は4つのまま続きます。">Multitask 4</button>
+          <button class="button ghost helpable" type="button" id="multitaskFiveBtn" aria-pressed="false" data-help="最初の4タスクに加え、40秒からミニマップのレーン指定も追加される5タスク版です。">Multitask 5</button>
           <div class="mode-help" id="modeHelp" aria-live="polite"></div>
           <div class="start-row">
             <button class="button helpable" type="button" id="startBtn" data-help="選んだ設定でトレーニングを開始します。">Start</button>
@@ -1295,7 +1486,7 @@
         </div>
 
         <section class="results" id="results" aria-label="結果">
-          <h2>Training Complete</h2>
+          <h2 id="resultTitle">Training Complete</h2>
           <div class="stat-grid">
             <div class="stat"><b id="resultScore">0</b><span id="resultScoreLabel">Score</span></div>
             <div class="stat"><b id="resultAccuracy">0%</b><span>Accuracy</span></div>
@@ -1314,6 +1505,21 @@
       </div>
     </section>
 
+    <div class="survival-hp" id="survivalHp" role="status" aria-label="残りHP 3 / 3">
+      <small aria-hidden="true">HP</small>
+      <span aria-hidden="true">&#9829;</span>
+      <span aria-hidden="true">&#9829;</span>
+      <span aria-hidden="true">&#9829;</span>
+    </div>
+    <div class="attack-cue" id="attackCue" hidden aria-label="攻撃状態">
+      <i class="weapon"></i><b id="attackMoveCue">MOVE OK</b>
+      <div class="recovery"><i></i></div><span id="attackReadyCue">AA READY</span>
+    </div>
+    <div class="as-readiness" id="asReadiness" hidden>
+      <span id="asReadinessLabel">READY</span>
+      <div class="as-readiness-track"><div class="as-readiness-fill" id="asReadinessFill"></div></div>
+      <small id="asInputFeedback"></small>
+    </div>
     <div class="hud-bottom">
       <div class="timer-track" aria-hidden="true"><div class="timer-fill" id="timerFill"></div></div>
       <div class="feedback" id="feedback"></div>
@@ -1325,6 +1531,7 @@
         <span>ACC <strong id="accuracy">100%</strong></span>
         <span>COMBO <strong id="combo">0</strong></span>
         <span>AVG <strong id="reaction">0ms</strong></span>
+        <span class="survival-stat" id="survivalStat">MISS <strong id="survivalMiss">0/3</strong></span>
       </div>
     </div>
     <button class="cursor-panel-toggle" type="button" id="cursorPanelBtn">Cursor</button>
@@ -1337,9 +1544,10 @@
     </div>
     <button class="release-toggle" type="button" id="releaseNotesBtn" aria-expanded="false" aria-controls="releaseNotesPanel">更新情報</button>
     <section class="release-panel" id="releaseNotesPanel" aria-label="更新情報">
-      <h2>EYES FORGE v0.9.9</h2>
-      <small>2026.07.09</small>
+      <h2>EYES FORGE v0.10.0</h2>
+      <small>2026.08.08</small>
       <ul>
+        <li>3回外したら即ゲームオーバーになるSurvivalモードを追加</li>
         <li>的の色の濃さと的の大きさを調整できる設定を追加</li>
         <li>APMの記録時間がプレイ開始時の秒数で保存されるように修正</li>
         <li>メニュー項目をかざした時と音量変更時に、音量確認用の小さなプレビュー音を追加</li>
@@ -1370,6 +1578,9 @@
     const accuracyEl = document.getElementById("accuracy");
     const comboEl = document.getElementById("combo");
     const reactionEl = document.getElementById("reaction");
+    const survivalStat = document.getElementById("survivalStat");
+    const survivalMiss = document.getElementById("survivalMiss");
+    const survivalHp = document.getElementById("survivalHp");
     const timerFill = document.getElementById("timerFill");
     const feedback = document.getElementById("feedback");
     const difficulty = document.getElementById("difficulty");
@@ -1394,7 +1605,10 @@
     const movingFocusBtn = document.getElementById("movingFocusBtn");
     const gridShotBtn = document.getElementById("gridShotBtn");
     const apmBtn = document.getElementById("apmBtn");
+    const survivalBtn = document.getElementById("survivalBtn");
+    const attackMoveBtn = document.getElementById("attackMoveBtn");
     const soundBtn = document.getElementById("soundBtn");
+    const resultTitle = document.getElementById("resultTitle");
     const resultScore = document.getElementById("resultScore");
     const resultScoreLabel = document.getElementById("resultScoreLabel");
     const resultAccuracy = document.getElementById("resultAccuracy");
@@ -1428,6 +1642,7 @@
     ];
     const apmStartNumber = 5;
     const apmScoreMultiplier = 1.8;
+    const survivalMissLimit = 3;
 
     let state = {
       duration: 60,
@@ -1454,6 +1669,24 @@
       calm: false,
       gridShot: false,
       apmMode: false,
+      survivalMode: false,
+      attackMove: false,
+      attackArmed: false,
+      attackMoved: false,
+      attackTiming: false,
+      attackSpeed: 0.65,
+      attackPending: null,
+      attackUntil: 0,
+      attackFireTimer: null,
+      attackFlights: new Set(),
+      attackReadinessFrame: null,
+      attackInputFeedback: "",
+      attackStartTimer: null,
+      attackReadyTimer: null,
+      moveZone: null,
+      movePosition: null,
+      movePositionUses: 0,
+      survivalMisses: 0,
       apmNext: apmStartNumber,
       sound: true,
       volume: 0.7,
@@ -1604,6 +1837,9 @@
       if (kind === "hit") {
         playPopTone(now, 340, 0.075, 0.06);
       }
+      if (kind === "move") {
+        playTone({ frequency: 480, start: now, duration: 0.045, type: "sine", gain: 0.035 });
+      }
       if (kind === "miss") {
         playTone({ frequency: 190, start: now, duration: 0.12, type: "sawtooth", gain: 0.035 });
         playTone({ frequency: 140, start: now + 0.04, duration: 0.13, type: "triangle", gain: 0.025 });
@@ -1634,16 +1870,17 @@
     }
 
     function eventName() {
-      if (state.apmMode && state.movingFocus) return "APM + 中心移動";
-      if (state.apmMode) return "APM";
-      if (state.gridShot && state.movingFocus) return "GridShot + 中心移動";
-      if (state.gridShot) return "GridShot";
+      if (state.attackMove) return `Attack Move${state.attackTiming ? ` / AS ${state.attackSpeed.toFixed(3)}` : ""}${state.movingFocus ? " + 中心移動" : ""}`;
+      if (state.apmMode) return `APM${state.movingFocus ? " + 中心移動" : ""}`;
+      if (state.gridShot) return `GridShot${state.movingFocus ? " + 中心移動" : ""}`;
+      if (state.survivalMode) return `Survival${state.movingFocus ? " + 中心移動" : ""}`;
       if (state.movingFocus) return "中心移動";
       return "通常";
     }
 
     function eventKey(duration = state.duration) {
-      const mode = state.apmMode ? "apm-arealme" : state.gridShot ? "grid" : "single";
+      if (state.attackMove) return `attack-move-${state.attackTiming ? `as20-${state.attackSpeed.toFixed(3)}-` : ""}${state.movingFocus ? "moving" : "static"}-${duration}`;
+      const mode = state.apmMode ? "apm-arealme" : state.gridShot ? "grid" : state.survivalMode ? "survival" : "single";
       return `${mode}-${state.movingFocus ? "moving" : "static"}-${duration}`;
     }
 
@@ -1651,9 +1888,31 @@
       return `${eventName()} / ${duration}秒`;
     }
 
+    function normalizeRankings(value) {
+      const rankings = Object.create(null);
+      if (!value || typeof value !== "object" || Array.isArray(value)) return rankings;
+
+      for (const [key, rows] of Object.entries(value)) {
+        if (!Array.isArray(rows)) continue;
+        rankings[key] = rows.filter((row) => {
+          if (!row || typeof row !== "object" || Array.isArray(row)) return false;
+          return Number.isFinite(row.score) && row.score >= 0
+            && Number.isFinite(row.accuracy) && row.accuracy >= 0 && row.accuracy <= 100
+            && Number.isFinite(row.reaction) && row.reaction >= 0
+            && (row.duration === undefined || (Number.isFinite(row.duration) && row.duration > 0));
+        }).map((row) => ({
+          ...row,
+          date: typeof row.date === "string" ? row.date : "-",
+          difficulty: typeof row.difficulty === "string" ? row.difficulty : "-",
+          focusSpeed: typeof row.focusSpeed === "string" ? row.focusSpeed : "-"
+        }));
+      }
+      return rankings;
+    }
+
     function readRankings() {
       try {
-        state.rankingStore = JSON.parse(localStorage.getItem(leaderboardKey) || "{}");
+        state.rankingStore = normalizeRankings(JSON.parse(localStorage.getItem(leaderboardKey) || "{}"));
         return state.rankingStore;
       } catch {
         return state.rankingStore;
@@ -1724,6 +1983,11 @@
     }
 
     function resetStats() {
+      resetAttackTiming();
+      state.movePosition = null;
+      state.movePositionUses = 0;
+      state.attackMoved = false;
+      setAttackArmed(false);
       state.score = 0;
       state.attempts = 0;
       state.hits = 0;
@@ -1733,12 +1997,14 @@
       state.remaining = state.duration;
       state.startedAt = 0;
       state.apmStartedAt = 0;
+      state.survivalMisses = 0;
       syncScoreLabels();
       scoreEl.textContent = "0";
       timeEl.textContent = state.duration;
       accuracyEl.textContent = "100%";
       comboEl.textContent = "0";
       reactionEl.textContent = "0ms";
+      updateSurvivalHud();
       timerFill.style.transform = "scaleX(1)";
       feedback.classList.remove("show");
     }
@@ -1782,6 +2048,17 @@
       return Math.round((state.hits / elapsedMs) * 60000 * apmScoreMultiplier);
     }
 
+    function updateSurvivalHud() {
+      const remainingMisses = Math.max(0, survivalMissLimit - state.survivalMisses);
+      survivalStat.classList.toggle("show", state.survivalMode);
+      survivalMiss.textContent = `${remainingMisses}/${survivalMissLimit}`;
+      survivalHp.classList.toggle("show", state.survivalMode);
+      survivalHp.setAttribute("aria-label", `残りHP ${remainingMisses} / ${survivalMissLimit}`);
+      survivalHp.querySelectorAll("span").forEach((heart, index) => {
+        heart.classList.toggle("depleted", index >= remainingMisses);
+      });
+    }
+
     function updateHud() {
       const accuracy = state.attempts ? Math.round((state.hits / state.attempts) * 100) : 100;
       const avg = state.reactions.length
@@ -1793,9 +2070,15 @@
       accuracyEl.textContent = `${accuracy}%`;
       comboEl.textContent = state.combo;
       reactionEl.textContent = `${avg}ms`;
+      updateSurvivalHud();
     }
 
-    function clearTarget() {
+    function clearTarget(keepMoveZone = false) {
+      if (state.attackPending) resetAttackTiming();
+      if (!keepMoveZone) {
+        state.moveZone?.remove();
+        state.moveZone = null;
+      }
       if (state.target) {
         state.target.remove();
         state.target = null;
@@ -1981,6 +2264,15 @@
       }
       stage.appendChild(target);
       const targetRecord = { element: target, x, y, size, born: performance.now(), label, order };
+      if (state.attackMove) {
+        targetRecord.hp = 3;
+        const health = document.createElement("span");
+        health.className = "target-label target-health";
+        health.textContent = "3 HP";
+        target.appendChild(health);
+        targetRecord.health = health;
+        target.setAttribute("aria-label", "的 残り3HP");
+      }
       state.targets.push(targetRecord);
       if (!state.gridShot && !state.apmMode) {
         state.target = target;
@@ -1992,10 +2284,70 @@
         if (event.button !== 0 && event.button !== 2) return;
         event.preventDefault();
         event.stopPropagation();
+        if (!acceptShot(event)) return;
         handleTargetPress(targetRecord);
       });
 
       return targetRecord;
+    }
+
+    function createMoveZone() {
+      const rect = stage.getBoundingClientRect();
+      const size = Math.min(240, Math.max(140, Math.min(rect.width, rect.height) * 0.24));
+      const inset = size / 2 + 24;
+      const top = 100 + size / 2;
+      const bottom = Math.max(top, rect.height - 160 - size / 2);
+      const target = state.targetPoint;
+      const spacing = (size + target.size) / 2 + 84;
+      const points = Array.from({ length: 32 }, (_, index) => {
+        const angle = index * Math.PI / 16;
+        return { x: target.x + Math.cos(angle) * spacing, y: target.y + Math.sin(angle) * spacing };
+      });
+      const available = points.filter((point) => point.x >= inset && point.x <= rect.width - inset
+        && point.y >= top && point.y <= bottom
+        && (!state.movePosition || Math.hypot(point.x - state.movePosition.x, point.y - state.movePosition.y) > 1));
+      if (!state.movePosition || state.movePositionUses >= 3) {
+        if (available.length) {
+          state.movePosition = available[Math.floor(Math.random() * available.length)];
+        } else {
+          // If an edge leaves no room, place the pair together near the middle.
+          const next = { x: rect.width / 2, y: rect.height / 2 - spacing / 2 };
+          Object.assign(target, next);
+          Object.assign(state.targets[0], next);
+          state.target.style.setProperty("--x", `${next.x}px`);
+          state.target.style.setProperty("--y", `${next.y}px`);
+          state.movePosition = { x: next.x, y: next.y + spacing };
+        }
+        state.movePositionUses = 0;
+      }
+      const point = state.movePosition;
+      const zone = document.createElement("button");
+      zone.type = "button";
+      zone.className = "move-zone";
+      zone.textContent = "MOVE";
+      zone.setAttribute("aria-label", "移動エリア");
+      zone.style.setProperty("--x", `${point.x}px`);
+      zone.style.setProperty("--y", `${point.y}px`);
+      zone.style.setProperty("--size", `${size}px`);
+      state.attackMoved = false;
+      setAttackArmed(false);
+      zone.addEventListener("pointerdown", (event) => {
+        event.preventDefault();
+        event.stopPropagation();
+        if (event.button !== 2) return;
+        if (!state.playing || !state.attackMove) return;
+        if (state.attackPending) {
+          if (performance.now() >= state.attackPending.fireAt) finishTimedAttack();
+          else { resetAttackTiming(true); showFeedback("CANCEL", false); }
+        }
+        if (!state.target || state.attackMoved) return;
+        state.attackMoved = true;
+        if (!state.attackTiming) state.movePositionUses += 1;
+        setAttackArmed(false);
+        playSound("move");
+      });
+      state.moveZone = zone;
+      stage.appendChild(zone);
     }
 
     function spawnTarget() {
@@ -2010,6 +2362,7 @@
         return;
       }
       createTarget();
+      if (state.attackMove) createMoveZone();
     }
 
     function fillGridTargets() {
@@ -2028,8 +2381,210 @@
       }
     }
 
+    function attackCuePosition(record) {
+      const width = stage.clientWidth;
+      const height = stage.clientHeight;
+      const above = record.y - record.size / 2 - 82;
+      return { x: Math.max(96, Math.min(width - 96, record.x)),
+        y: above >= 90 ? above : Math.min(height - 90, record.y + record.size / 2 + 18) };
+    }
+
+    function updateAttackReadiness() {
+      cancelAnimationFrame(state.attackReadinessFrame);
+      const hud = document.getElementById("asReadiness");
+      const active = state.playing && state.attackMove && state.attackTiming;
+      hud.hidden = !(active && state.moveZone?.isConnected);
+      const cue = document.getElementById("attackCue");
+      const record = state.targets[0];
+      cue.hidden = !(active && record);
+      if (!active) return;
+      if (state.moveZone) {
+        for (const property of ["--x", "--y", "--size"]) {
+          hud.style.setProperty(property, state.moveZone.style.getPropertyValue(property));
+        }
+      }
+      const now = performance.now();
+      const pending = state.attackPending;
+      const queued = Boolean(pending && now < pending.startsAt);
+      const winding = Boolean(pending && !queued);
+      const until = queued ? pending.startsAt : state.attackUntil;
+      const remaining = Math.max(0, until - now);
+      const ready = !pending && remaining === 0;
+      const recovery = Math.max(0, Math.min(1, 1 - remaining / (1000 / state.attackSpeed)));
+      if (!cue.hidden) {
+        if (cue.targetRecord !== record || cue.targetX !== record.x || cue.targetY !== record.y) {
+          const point = attackCuePosition(record);
+          cue.style.left = `${point.x}px`;
+          cue.style.top = `${point.y}px`;
+          cue.targetRecord = record;
+          cue.targetX = record.x;
+          cue.targetY = record.y;
+        }
+        cue.dataset.phase = winding ? "windup" : queued ? "queued" : ready ? "ready" : "recovery";
+        const draw = winding ? Math.max(0, Math.min(1, (now - pending.startsAt) / (pending.fireAt - pending.startsAt))) : 0;
+        cue.style.setProperty("--draw", String(1 - draw * .65));
+        cue.style.setProperty("--recovery", String(recovery));
+        document.getElementById("attackMoveCue").textContent = winding ? "MOVE不可 / 発射待ち" : queued ? "予約中 / MOVEで取消" : "MOVE OK";
+        document.getElementById("attackReadyCue").textContent = winding ? "AA 溜め中" : queued ? `早押し / ${Math.ceil(remaining)}ms待ち` : ready ? (state.attackMoved ? "AA READY" : "AA READY / MOVE待ち") : `次のAA ${(remaining / 1000).toFixed(2)}s`;
+      }
+      hud.dataset.ready = String(ready);
+      hud.dataset.queued = String(queued);
+      document.getElementById("asReadinessLabel").textContent = queued ? "早押し / 予約中" : winding ? "AA / 溜め中" : ready ? "READY" : `WAIT ${(remaining / 1000).toFixed(2)}s`;
+      document.getElementById("asReadinessFill").style.setProperty("--progress", `${100 * (winding ? 0 : Math.max(0, Math.min(1, 1 - remaining / (1000 / state.attackSpeed))))}%`);
+      document.getElementById("asInputFeedback").textContent = state.attackInputFeedback;
+      state.attackReadinessFrame = requestAnimationFrame(updateAttackReadiness);
+    }
+
+    function resetAttackTiming(cancel = false) {
+      if (!cancel) {
+        cancelAnimationFrame(state.attackReadinessFrame);
+        document.getElementById("asReadiness").hidden = true;
+        document.getElementById("attackCue").hidden = true;
+        state.attackInputFeedback = "";
+      }
+      if (!cancel) {
+        state.attackFlights.forEach(flight => {
+          clearTimeout(flight.timer);
+          flight.element.remove();
+          flight.motion.remove();
+        });
+        state.attackFlights.clear();
+      }
+      const pending = state.attackPending;
+      if (pending?.motion) {
+        if (cancel) {
+          const interrupted = performance.now() >= pending.startsAt;
+          pending.motion.className = "aa-motion cancelled";
+          pending.motion.querySelector(".aa-label").textContent = interrupted ? "MISS / CANCEL" : "予約取消";
+          setTimeout(() => pending.motion.remove(), 650);
+        } else pending.motion.remove();
+      }
+      if (!cancel) stage.querySelectorAll(".aa-motion").forEach(element => element.remove());
+      const previousUntil = cancel ? (state.attackPending?.previousUntil || 0) : 0;
+      clearTimeout(state.attackStartTimer);
+      clearTimeout(state.attackFireTimer);
+      clearTimeout(state.attackReadyTimer);
+      state.attackPending?.record.element.classList.remove("winding");
+      state.attackPending = null;
+      state.attackUntil = previousUntil;
+    }
+
+    function finishTimedAttack() {
+      const pending = state.attackPending;
+      if (!pending) return;
+      state.attackPending = null;
+      clearTimeout(state.attackFireTimer);
+      pending.record.element.classList.remove("winding");
+      if (!state.playing || !state.targets.includes(pending.record)) {
+        pending.motion?.remove();
+        return;
+      }
+      if (performance.now() >= state.startedAt + state.sessionDuration * 1000) {
+        pending.motion?.remove();
+        return;
+      }
+      pending.motion.className = "aa-motion launched";
+      pending.motion.querySelector(".aa-label").textContent = "発射 / MOVE OK";
+      const cuePoint = attackCuePosition(pending.record);
+      const origin = { x: cuePoint.x, y: cuePoint.y + 8 };
+      const projectile = document.createElement("div");
+      projectile.className = "aa-projectile";
+      projectile.setAttribute("aria-hidden", "true");
+      projectile.style.setProperty("--x", `${origin.x}px`);
+      projectile.style.setProperty("--y", `${origin.y}px`);
+      projectile.style.setProperty("--dx", `${pending.record.x - origin.x}px`);
+      projectile.style.setProperty("--dy", `${pending.record.y - origin.y}px`);
+      stage.appendChild(projectile);
+      const flight = { element: projectile, motion: pending.motion, timer: null };
+      state.attackFlights.add(flight);
+      flight.timer = setTimeout(() => {
+        state.attackFlights.delete(flight);
+        projectile.remove();
+        if (!state.playing || !state.targets.includes(pending.record) ||
+            performance.now() >= state.startedAt + state.sessionDuration * 1000) {
+          pending.motion.remove();
+          return;
+        }
+        pending.motion.className = "aa-motion fired";
+        pending.motion.querySelector(".aa-label").textContent = "HIT";
+        setTimeout(() => pending.motion.remove(), 420);
+        state.movePositionUses += 1;
+        registerHit(pending.record.x, pending.record.y, pending.record.size, pending.record);
+      }, 180);
+      setAttackArmed(state.attackArmed);
+    }
+
+    function beginTimedAttack(record) {
+      stage.querySelectorAll(".aa-motion.cancelled, .aa-motion.fired").forEach(element => element.remove());
+      const interval = 1000 / state.attackSpeed;
+      const now = performance.now();
+      const previousUntil = state.attackUntil;
+      const startsAt = Math.max(now, previousUntil);
+      const delay = startsAt - now;
+      state.attackInputFeedback = delay > 0 ? `早押し ${Math.ceil(delay)}ms` : "予約なし";
+      state.attackUntil = startsAt + interval;
+      const pending = { record, startsAt, previousUntil, fireAt: startsAt + interval * 0.2 };
+      const motion = document.createElement("div");
+      motion.className = "aa-motion queued";
+      motion.setAttribute("aria-hidden", "true");
+      motion.style.setProperty("--x", `${record.x}px`);
+      motion.style.setProperty("--y", `${record.y}px`);
+      motion.style.setProperty("--size", `${record.size + 12}px`);
+      motion.style.setProperty("--windup", `${interval * 0.2}ms`);
+      const ring = document.createElement("span");
+      ring.className = "aa-ring";
+      const label = document.createElement("span");
+      label.className = "aa-label";
+      label.textContent = "予約";
+      motion.append(ring, label);
+      stage.appendChild(motion);
+      pending.motion = motion;
+      state.attackPending = pending;
+      const showWindup = () => {
+        if (state.attackPending !== pending || !state.playing) return;
+        record.element.classList.add("winding");
+        motion.className = "aa-motion windup";
+        label.textContent = "AA";
+        setAttackArmed(state.attackArmed);
+      };
+      if (delay > 0) state.attackStartTimer = setTimeout(showWindup, delay);
+      else showWindup();
+      state.attackFireTimer = setTimeout(finishTimedAttack, delay + interval * 0.2);
+      clearTimeout(state.attackReadyTimer);
+      state.attackReadyTimer = setTimeout(() => setAttackArmed(state.attackArmed), delay + interval + 1);
+      setAttackArmed(false);
+    }
+
+    function setAttackArmed(armed) {
+      state.attackArmed = armed;
+      updateAttackReadiness();
+      stage.classList.toggle("attack-ready", armed);
+      stage.classList.toggle("attack-mode", state.attackMove);
+      document.getElementById("sessionMeta").textContent = state.attackMove
+        ? (armed ? (state.attackMoved ? "ATTACK MOVE / A READY" : "ATTACK MOVE / A · MOVE待ち") : "ATTACK MOVE / A 待機")
+        : "PERIPHERAL FOCUS";
+      if (state.playing && state.attackMove && state.attackTiming) {
+        const phase = state.attackPending ? (performance.now() < state.attackPending.startsAt ? "QUEUED" : "WINDUP") : performance.now() < state.attackUntil ? "COOLDOWN / MOVE" : armed ? (state.attackMoved ? "A READY" : "MOVE待ち") : "READY / A 待機";
+        document.getElementById("sessionMeta").textContent = `AS ${state.attackSpeed.toFixed(2)} / ${phase}`;
+      }
+    }
+
+    function acceptShot(event) {
+      if (!state.attackMove) return true;
+      const ready = !state.attackTiming || !state.attackPending;
+      const allowed = event.button === 0 && state.attackArmed && state.attackMoved && ready;
+      if (!ready && event.button === 0) showFeedback("WAIT", false);
+      if (allowed) state.attackMoved = false;
+      setAttackArmed(false);
+      return allowed;
+    }
+
     function handleTargetPress(targetRecord) {
       if (!targetRecord || !state.playing) return;
+      if (state.attackMove && state.attackTiming) {
+        beginTimedAttack(targetRecord);
+        return;
+      }
       if (state.apmMode) {
         if (targetRecord.order !== state.apmNext) {
           registerMiss(targetRecord.x, targetRecord.y, Math.max(54, targetRecord.size * 0.52), false);
@@ -2065,10 +2620,20 @@
       state.score = currentScoreValue();
       makeBurst(x, y, size, "hit-burst");
       playSound("hit");
+      if (state.attackMove && targetRecord) {
+        targetRecord.hp -= 1;
+        if (targetRecord.hp > 0) {
+          targetRecord.health.textContent = `${targetRecord.hp} HP`;
+          targetRecord.element.setAttribute("aria-label", `的 残り${targetRecord.hp}HP`);
+          updateHud();
+          showFeedback("HIT", true);
+          return;
+        }
+      }
       if ((state.gridShot || state.apmMode) && targetRecord) {
         removeTarget(targetRecord);
       } else {
-        clearTarget();
+        clearTarget(state.attackMove);
       }
       updateHud();
       showFeedback("HIT", true);
@@ -2085,13 +2650,21 @@
       if (!state.playing) return;
       state.attempts += 1;
       state.combo = 0;
+      if (state.survivalMode) {
+        state.survivalMisses += 1;
+      }
       makeBurst(x, y, size, "miss-burst");
       playSound("miss");
       if (!state.gridShot && !state.apmMode) {
         clearTarget();
       }
       updateHud();
-      showFeedback(expired ? "MISS" : "WIDE SHOT", false);
+      const survivalEnded = state.survivalMode && state.survivalMisses >= survivalMissLimit;
+      showFeedback(survivalEnded ? "GAME OVER" : expired ? "MISS" : "WIDE SHOT", false);
+      if (survivalEnded) {
+        endGame();
+        return;
+      }
       if (state.gridShot) {
         fillGridTargets();
       } else if (state.apmMode) {
@@ -2102,12 +2675,14 @@
     }
 
     function startGame() {
+      if (state.multitask) { startMultitask(); return; }
       clearInterval(state.gameTimer);
       clearTarget();
       state.sessionDuration = state.duration;
       resetStats();
       playSound("start");
       state.playing = true;
+      updateAttackReadiness();
       state.startedAt = performance.now();
       stage.classList.add("playing");
       titleBlock.classList.add("hidden");
@@ -2128,6 +2703,8 @@
     }
 
     function endGame() {
+      resetAttackTiming();
+      setAttackArmed(false);
       state.playing = false;
       playSound("end");
       clearInterval(state.gameTimer);
@@ -2139,6 +2716,7 @@
         ? Math.round(state.reactions.reduce((sum, value) => sum + value, 0) / state.reactions.length)
         : 0;
       state.score = currentScoreValue();
+      resultTitle.textContent = state.survivalMode && state.survivalMisses >= survivalMissLimit ? "Game Over" : "Training Complete";
       resultScore.textContent = state.score;
       resultAccuracy.textContent = `${accuracy}%`;
       resultCombo.textContent = state.bestCombo;
@@ -2153,6 +2731,7 @@
     }
 
     function showMenu() {
+      resetAttackTiming();
       state.playing = false;
       clearInterval(state.gameTimer);
       clearTarget();
@@ -2166,6 +2745,12 @@
       if (event.button !== 0 && event.button !== 2) return;
       if (event.target.closest(".target")) return;
       if (event.target.closest(".cursor-panel, .cursor-panel-toggle, .release-panel, .release-toggle, .audio-control, .hud-bottom")) return;
+      if (state.attackMove) {
+        event.preventDefault();
+        setAttackArmed(false);
+        return;
+      }
+      if (!acceptShot(event)) return;
       event.preventDefault();
       cursorAim.classList.add("click");
       setTimeout(() => cursorAim.classList.remove("click"), 90);
@@ -2224,6 +2809,13 @@
     }, true);
 
     document.addEventListener("keydown", (event) => {
+      if (state.playing && state.attackMove && event.code === "KeyA") {
+        if (event.repeat || event.ctrlKey || event.altKey || event.metaKey || event.isComposing) return;
+        if (event.target.closest("input, textarea, select, [contenteditable], .cursor-panel, .release-panel")) return;
+        event.preventDefault();
+        setAttackArmed(true);
+        return;
+      }
       if (event.key === "Escape") {
         showMenu();
       }
@@ -2256,11 +2848,41 @@
       });
     });
 
+    function syncAttackSettings() {
+      if (state.playing) return;
+      state.attackTiming = document.getElementById("attackTiming").checked;
+      state.attackSpeed = Number(document.getElementById("attackSpeed").value);
+      document.getElementById("attackSpeedText").textContent = `${state.attackSpeed.toFixed(2)} / ${(1 / state.attackSpeed).toFixed(2)}秒`;
+      renderRanking();
+    }
+    document.getElementById("attackTiming").addEventListener("change", syncAttackSettings);
+    document.getElementById("attackSpeed").addEventListener("input", () => {
+      document.getElementById("attackPreset").value = "custom";
+      syncAttackSettings();
+    });
+    document.getElementById("attackPreset").addEventListener("change", (event) => {
+      document.getElementById("attackSpeed").value = event.target.value;
+      syncAttackSettings();
+    });
+
     function updateShotModeButtons() {
+      state.multitask = false;
+      document.getElementById("multitaskBtn").setAttribute("aria-pressed", "false");
+      document.getElementById("multitaskBtn").textContent = "Multitask 4";
+      document.getElementById("multitaskFiveBtn").setAttribute("aria-pressed", "false");
+      document.getElementById("multitaskFiveBtn").textContent = "Multitask 5";
+      document.getElementById("attackSettings").hidden = !state.attackMove;
+      state.attackMoved = false;
+      setAttackArmed(false);
+      attackMoveBtn.setAttribute("aria-pressed", String(state.attackMove));
+      attackMoveBtn.textContent = state.attackMove ? "Attack Move ON" : "Attack Move";
       gridShotBtn.setAttribute("aria-pressed", String(state.gridShot));
       gridShotBtn.textContent = state.gridShot ? "GridShot ON" : "GridShot";
       apmBtn.setAttribute("aria-pressed", String(state.apmMode));
       apmBtn.textContent = state.apmMode ? "APM ON" : "APM";
+      survivalBtn.setAttribute("aria-pressed", String(state.survivalMode));
+      survivalBtn.textContent = state.survivalMode ? "Survival ON" : "Survival";
+      updateSurvivalHud();
       syncScoreLabels();
     }
 
@@ -2333,6 +2955,8 @@
       state.gridShot = !state.gridShot;
       if (state.gridShot) {
         state.apmMode = false;
+        state.survivalMode = false;
+        state.attackMove = false;
       }
       playSound("toggle");
       updateShotModeButtons();
@@ -2346,6 +2970,8 @@
       state.apmMode = !state.apmMode;
       if (state.apmMode) {
         state.gridShot = false;
+        state.survivalMode = false;
+        state.attackMove = false;
       }
       state.apmNext = apmStartNumber;
       playSound("toggle");
@@ -2356,6 +2982,41 @@
       }
     });
 
+    survivalBtn.addEventListener("click", () => {
+      state.survivalMode = !state.survivalMode;
+      if (state.survivalMode) {
+        state.gridShot = false;
+        state.apmMode = false;
+        state.attackMove = false;
+      }
+      state.survivalMisses = 0;
+      playSound("toggle");
+      updateShotModeButtons();
+      renderRanking();
+      updateHud();
+      if (state.playing) {
+        spawnTarget();
+      }
+    });
+
+    window.addEventListener("blur", () => {
+      if (state.attackPending) resetAttackTiming(true);
+      setAttackArmed(false);
+    });
+
+    attackMoveBtn.addEventListener("click", () => {
+      state.attackMove = !state.attackMove;
+      if (state.attackMove) {
+        state.gridShot = false;
+        state.apmMode = false;
+        state.survivalMode = false;
+      }
+      playSound("toggle");
+      updateShotModeButtons();
+      renderRanking();
+      if (state.playing) spawnTarget();
+    });
+
     soundBtn.addEventListener("click", () => {
       state.sound = !state.sound;
       soundBtn.setAttribute("aria-pressed", String(state.sound));
@@ -2364,6 +3025,418 @@
         playSound("toggle");
       }
     });
+
+
+    const multiLayer = document.createElement("section");
+    multiLayer.id = "multitaskLayer";
+    multiLayer.hidden = true;
+    multiLayer.setAttribute("aria-label", "Multitask");
+    multiLayer.innerHTML = '<header><strong>MULTITASK</strong><span id="multiScore">0.0 s</span><span id="multiPhase">1 / 4 TASKS</span><button class="button ghost" id="multiExit" type="button">終了</button></header><canvas id="multiCanvas" aria-label="的・WASD回避・浮遊・ミニマップの同時操作"></canvas><div id="multiResult" hidden><h2>GAME OVER</h2><p id="multiReason"></p><strong id="multiFinal"></strong><p id="multiBest"></p><button class="button" id="multiRetry" type="button">Retry</button><button class="button ghost" id="multiMenu" type="button">Menu</button></div>';
+    document.body.appendChild(multiLayer);
+    const multiIntro = document.createElement("section");
+    multiIntro.id="multiIntro"; multiIntro.hidden=true;
+    multiIntro.setAttribute("role","dialog");
+    multiIntro.setAttribute("aria-labelledby","multiIntroTitle");
+    multiIntro.innerHTML='<h3 id="multiIntroTitle"></h3><p id="multiIntroText"></p><button class="button" id="multiContinue" type="button">続ける</button>';
+    multiLayer.appendChild(multiIntro);
+    const multiInstructions = [
+      ["TARGET / クリック","的を2回クリックして壊します。各的は10秒以内。空振りは失敗になりません。"],
+      ["DODGE / W・S","Wで上、Sで下に移動。予告線のあとに右から来る弾を避けます。被弾すると終了です。"],
+      ["HOLD / A・D","Aで左、Dで右に移動。緑の範囲で連続1秒キープすると次の位置へ。10秒以内に達成してください。"],
+      ["FLOAT / スペース","スペース長押しで上昇、離すとゆっくり下降。右から来る赤い障害物を避けます。床・天井に触れても大丈夫です。"],
+      ["MINIMAP / クリック","指定されたTOP・MID・BOTの道を6秒以内にクリック。違うレーンや時間切れで終了です。"]
+    ];
+    function showMultiIntro() {
+      multi.intro=true; multi.keys.clear();
+      const [title,description]=multiInstructions[multi.phase-1];
+      document.getElementById("multiIntroTitle").textContent=title;
+      document.getElementById("multiIntroText").textContent=description+" 説明中は全タスクとスコアを停止しています。";
+      multiIntro.hidden=false;
+    }
+    document.getElementById("multiContinue").addEventListener("click",()=>{
+      multi.intro=false;multiIntro.hidden=true;multi.keys.clear();multi.last=performance.now();
+    });
+    multiLayer.querySelector("header strong").textContent = "EYES FORGE";
+    const multiTargets = document.createElement("div");
+    multiTargets.id = "multiTargets";
+    multiTargets.setAttribute("aria-hidden", "true");
+    multiLayer.insertBefore(multiTargets, document.getElementById("multiResult"));
+    const multiCanvas = document.getElementById("multiCanvas");
+    const multiCtx = multiCanvas.getContext("2d");
+    const multi = { running: false, elapsed: 0, phase: 1, keys: new Set(), frame: null, targets: [], shots: [], player: { x: .5, y: .5 }, float: { y: .45, vy: 0 }, lane: "", laneDue: 0, nextLane: 0, nextShot: 0, width: 0, height: 0 };
+    const multiLanes = {
+      TOP: [[.12,.88],[.12,.12],[.88,.12]],
+      MID: [[.18,.82],[.82,.18]],
+      BOT: [[.12,.88],[.88,.88],[.88,.12]]
+    };
+    function multiRects() {
+      const w = multi.width, h = multi.height;
+      if (multi.phase === 1) return [{ x: 0, y: 0, w, h }];
+      const columns = Math.ceil(multi.phase / 2);
+      return Array.from({length: multi.phase}, (_,i) => ({
+        x: Math.floor(i/2)*w/columns, y: (i%2)*h/2, w: w/columns, h: h/2
+      }));
+    }
+    function multiArea(index) {
+      const r = multiRects()[index];
+      return { x: r.x+14, y: r.y+64, w: Math.max(1,r.w-28), h: Math.max(1,r.h-82) };
+    }
+    function multiTarget(index) {
+      // Fixed separated cells keep medium-sized 2HP targets usable after each split.
+      const positions = [[.27,.3],[.73,.3],[.5,.72]];
+      const p = positions[index];
+      return { x: p[0]+(Math.random()-.5)*.08, y: p[1]+(Math.random()-.5)*.08, hp: 2, due: multi.elapsed+10 };
+    }
+    function multiResize() {
+      const rect = multiCanvas.getBoundingClientRect();
+      multi.width = rect.width; multi.height = rect.height;
+      const ratio = Math.min(devicePixelRatio || 1, 2);
+      multiCanvas.width = Math.round(rect.width*ratio);
+      multiCanvas.height = Math.round(rect.height*ratio);
+      multiCtx.setTransform(ratio,0,0,ratio,0,0);
+      if (!multiLayer.hidden) multiDraw();
+    }
+    function startMultitask() {
+      multi.maxTasks = state.multitaskTasks === 5 ? 5 : 4;
+      state.playing = false;
+      clearInterval(state.gameTimer);
+      clearTarget();
+      resetAttackTiming();
+      cancelAnimationFrame(multi.frame);
+      multiLayer.hidden = false;
+      multiLayer.appendChild(cursorAim);
+      document.getElementById("multiResult").hidden = true;
+      Object.assign(multi, { running: true, elapsed: 0, phase: 1, last: performance.now(), shots: [], player: {x:.5,y:.5}, float: {y:.45,vy:0}, lane:"", laneDue:0, nextLane:40, nextShot:11, hold:{x:.5,goal:.2,time:0,due:28} });
+      multi.keys.clear();
+      multi.targets = [0,1,2].map(multiTarget);
+      multi.flightObstacles = [];
+      multi.nextFlight = 34;
+      multi.flightBottom = true;
+      multiTargets.replaceChildren();
+      for (let i=0;i<3;i++) {
+        const target=document.createElement("div");
+        target.className="target";
+        const label=document.createElement("span");
+        label.className="target-label target-health";
+        target.appendChild(label);
+        multiTargets.appendChild(target);
+      }
+      multiResize();
+      showMultiIntro();
+      multiDraw();
+      playSound("start");
+      multi.frame = requestAnimationFrame(multiFrame);
+    }
+    function endMultitask(reason) {
+      if (!multi.running) return;
+      multi.running = false;
+      multi.intro=false;multiIntro.hidden=true;
+      multi.keys.clear();
+      cancelAnimationFrame(multi.frame);
+      let best = multi.elapsed;
+      try {
+        const bestKey = multi.maxTasks === 5 ? "eyesforge-multitask-best-v1" : "eyesforge-multitask-4-best-v1";
+        const old = Number(localStorage.getItem(bestKey));
+        best = Math.max(Number.isFinite(old) ? old : 0, best);
+        localStorage.setItem(bestKey, String(best));
+      } catch {}
+      document.getElementById("multiReason").textContent = reason;
+      document.getElementById("multiFinal").textContent = multi.elapsed.toFixed(1)+" s";
+      document.getElementById("multiBest").textContent = "BEST "+best.toFixed(1)+" s";
+      document.getElementById("multiResult").hidden = false;
+      playSound("miss");
+    }
+    function leaveMultitask() {
+      multi.intro=false;multiIntro.hidden=true;
+      multi.running = false;
+      cancelAnimationFrame(multi.frame);
+      multi.keys.clear();
+      multiLayer.hidden = true;
+      stage.prepend(cursorAim);
+      multiTargets.replaceChildren();
+      showMenu();
+    }
+    function multiStep(dt) {
+      const before = multi.phase;
+      multi.elapsed += dt;
+      multi.phase = Math.min(multi.maxTasks,1+Math.floor(multi.elapsed/10));
+      if (multi.phase !== before) {
+        playSound("toggle");
+        if (before < 2 && multi.phase >= 2) multi.nextShot = multi.elapsed+1;
+        if (before < 3 && multi.phase >= 3) multi.hold = {x:.5,goal:.2,time:0,due:multi.elapsed+10};
+        if (before < 4 && multi.phase >= 4) {
+          multi.float = {y:.45,vy:0};
+          multi.flightObstacles = [];
+          multi.nextFlight = multi.elapsed+4;
+          multi.flightBottom = true;
+        }
+        showMultiIntro();
+        return;
+      }
+      if (multi.targets.some(t => multi.elapsed >= t.due)) return endMultitask("TARGET / 的の制限時間切れ");
+      if (multi.phase >= 2) {
+        const dy = Number(multi.keys.has("KeyS"))-Number(multi.keys.has("KeyW"));
+        multi.player.y = Math.max(.04,Math.min(.96,multi.player.y+dy*dt*.55));
+        if (multi.elapsed >= multi.nextShot) {
+          multi.shots.push({x:1.04,y:multi.player.y,fire:multi.elapsed+1});
+          multi.nextShot = multi.elapsed+1.6;
+        }
+        const area = multiArea(1), scale = Math.min(area.w,area.h);
+        for (const shot of multi.shots) {
+          if (multi.elapsed < shot.fire) continue;
+          shot.x -= dt*.7;
+          if (Math.hypot((shot.x-multi.player.x)*area.w,(shot.y-multi.player.y)*area.h) < scale*.045)
+            return endMultitask("DODGE / スキルに被弾");
+        }
+        multi.shots = multi.shots.filter(s => s.x > -.08);
+      }
+      if (multi.phase >= 3) {
+        const hold=multi.hold;
+        if (multi.elapsed >= hold.due) return endMultitask("HOLD / 指定位置の時間切れ");
+        const dx=Number(multi.keys.has("KeyD"))-Number(multi.keys.has("KeyA"));
+        hold.x=Math.max(.04,Math.min(.96,hold.x+dx*dt*.5));
+        hold.time=Math.abs(hold.x-hold.goal)<=.07 ? hold.time+dt : 0;
+        if (hold.time>=1) {
+          const choices=[.15,.35,.65,.85].filter(x=>Math.abs(x-hold.goal)>.3);
+          hold.goal=choices[Math.floor(Math.random()*choices.length)];
+          hold.time=0;hold.due=multi.elapsed+10;playSound("hit");
+        }
+      }
+      if (multi.phase >= 4) {
+        const desired = multi.keys.has("Space") ? -.22 : .12;
+        multi.float.vy += (desired-multi.float.vy)*Math.min(1,dt*6);
+        multi.float.y += multi.float.vy*dt;
+        if (multi.float.y < .06) { multi.float.y = .06; multi.float.vy = 0; }
+        if (multi.float.y > .94) { multi.float.y = .94; multi.float.vy = 0; }
+        if (multi.elapsed >= multi.nextFlight) {
+          multi.flightObstacles.push({x:1.05,w:.06,h:.2+Math.random()*.12,bottom:multi.flightBottom});
+          multi.flightBottom = !multi.flightBottom;
+          multi.nextFlight = multi.elapsed+5;
+        }
+        const area = multiArea(3);
+        for (const obstacle of multi.flightObstacles) {
+          obstacle.x -= dt*.15;
+          const top = obstacle.bottom ? 1-obstacle.h : 0;
+          const nearestX = Math.max(obstacle.x,Math.min(obstacle.x+obstacle.w,.35));
+          const nearestY = Math.max(top,Math.min(top+obstacle.h,multi.float.y));
+          if (Math.hypot((.35-nearestX)*area.w,(multi.float.y-nearestY)*area.h)<7)
+            return endMultitask("FLIGHT / 障害物に衝突");
+        }
+        multi.flightObstacles = multi.flightObstacles.filter(o=>o.x+o.w>0);
+      }
+      if (multi.phase >= 5) {
+        if (multi.lane && multi.elapsed >= multi.laneDue) return endMultitask("MAP / レーン指定の時間切れ");
+        if (!multi.lane && multi.elapsed >= multi.nextLane) {
+          const names = Object.keys(multiLanes).filter(n => n !== multi.previousLane);
+          multi.lane = names[Math.floor(Math.random()*names.length)];
+          multi.previousLane = multi.lane;
+          multi.laneDue = multi.elapsed+6;
+        }
+      }
+    }
+    function multiFrame(now) {
+      if (!multi.running) return;
+      if(multi.intro) {
+        multi.last=now;multiDraw();multi.frame=requestAnimationFrame(multiFrame);return;
+      }
+      // Substeps prevent tunneling and keep physics independent of refresh rate.
+      let remaining = Math.max(0,(now-multi.last)/1000);
+      multi.last = now;
+      if (remaining > 2) { endMultitask("中断 / ウィンドウが非アクティブになりました"); return; }
+      while (remaining > 0 && multi.running && !multi.intro) {
+        const dt = Math.min(remaining,1/120);
+        multiStep(dt); remaining -= dt;
+      }
+      multiDraw();
+      if (multi.running) multi.frame = requestAnimationFrame(multiFrame);
+    }
+    function multiCircle(x,y,r,color) {
+      multiCtx.beginPath(); multiCtx.arc(x,y,r,0,Math.PI*2); multiCtx.fillStyle=color; multiCtx.fill();
+    }
+    function multiTargetRadius(area) {
+      return Math.min(58,Math.min(area.w,area.h)*.2);
+    }
+    function multiDraw() {
+      const c = multiCtx, w=multi.width, h=multi.height;
+      c.lineWidth=1;
+      c.setLineDash([]);
+      c.clearRect(0,0,w,h);
+      if(multi.intro) {
+        const pane=multiRects()[multi.phase-1],rect=multiCanvas.getBoundingClientRect();
+        multiIntro.style.left=(rect.left+pane.x+pane.w/2)+"px";
+        multiIntro.style.top=(rect.top+pane.y+pane.h/2)+"px";
+        multiIntro.style.width=Math.min(330,pane.w-20)+"px";
+        multiIntro.style.maxHeight=Math.max(100,pane.h-16)+"px";
+        multiIntro.style.overflowY="auto";
+      }
+      document.getElementById("multiScore").textContent=multi.elapsed.toFixed(1)+" s";
+      document.getElementById("multiPhase").textContent=multi.phase+" / "+multi.maxTasks+" TASKS";
+      const titles=["01 / TARGET","02 / DODGE · WS","03 / HOLD · AD","04 / FLOAT · SPACE","05 / MINIMAP"];
+      multiRects().forEach((r,i)=>{
+        c.strokeStyle="rgba(255,255,255,.14)"; c.strokeRect(r.x+.5,r.y+.5,r.w-1,r.h-1);
+        c.fillStyle="#e6ece8"; c.font="bold 13px sans-serif"; c.textAlign="left"; c.fillText(titles[i],r.x+16,r.y+25);
+        c.font="12px sans-serif"; c.fillStyle="#9eaca4";
+        const sub = i===0 ? "2 HP / 10s" : i===1 ? "DODGE" : i===2 ? "HOLD 1s / "+Math.max(0,multi.hold.due-multi.elapsed).toFixed(1)+"s" : i===3 ? "AIRBORNE" : multi.lane ? multi.lane+"  "+Math.max(0,multi.laneDue-multi.elapsed).toFixed(1)+"s" : "CLEAR";
+        if(i===4&&multi.lane){c.font="bold 16px sans-serif";c.fillStyle="#ffe49f";}
+        c.fillText(sub,r.x+16,r.y+46);
+      });
+      let a=multiArea(0);
+      const radius=multiTargetRadius(a);
+      multi.targets.forEach((t,i)=>{
+        const x=a.x+t.x*a.w,y=a.y+t.y*a.h;
+        const target=multiTargets.children[i];
+        if(target) {
+          target.style.setProperty("--x",x+"px");
+          target.style.setProperty("--y",y+"px");
+          target.style.setProperty("--size",radius*2+"px");
+          target.firstChild.textContent=t.hp+" HP";
+        }
+        c.strokeStyle="rgba(255,173,18,.65)"; c.lineWidth=2; c.beginPath(); c.arc(x,y,radius+8,-Math.PI/2,-Math.PI/2+Math.PI*2*Math.max(0,(t.due-multi.elapsed)/10));c.stroke();
+      });
+      if(multi.phase>=2) {
+        a=multiArea(1);const s=Math.min(a.w,a.h);
+        c.strokeStyle="#2b383d";c.lineWidth=1;
+        for(let i=1;i<8;i++){c.beginPath();c.moveTo(a.x,a.y+a.h*i/8);c.lineTo(a.x+a.w,a.y+a.h*i/8);c.stroke();}
+        for(const shot of multi.shots){
+          if(multi.elapsed<shot.fire){c.strokeStyle="#b98753";c.setLineDash([5,8]);c.beginPath();c.moveTo(a.x,a.y+shot.y*a.h);c.lineTo(a.x+a.w,a.y+shot.y*a.h);c.stroke();c.setLineDash([]);}
+          else multiCircle(a.x+shot.x*a.w,a.y+shot.y*a.h,s*.022,"#ff6c7e");
+        }
+        multiCircle(a.x+multi.player.x*a.w,a.y+multi.player.y*a.h,s*.023,"#72e5d1");
+        c.strokeStyle="#edfffa";c.beginPath();c.arc(a.x+multi.player.x*a.w,a.y+multi.player.y*a.h,s*.03,0,Math.PI*2);c.stroke();
+      }
+      if(multi.phase>=3) {
+        a=multiArea(2);
+        const hold=multi.hold,y=a.y+a.h*.5;
+        c.strokeStyle="#586862";c.lineWidth=2;c.beginPath();c.moveTo(a.x,y);c.lineTo(a.x+a.w,y);c.stroke();
+        c.fillStyle="rgba(112,243,154,.18)";c.fillRect(a.x+(hold.goal-.07)*a.w,y-36,.14*a.w,72);
+        c.strokeStyle="#70f39a";c.strokeRect(a.x+(hold.goal-.07)*a.w,y-36,.14*a.w,72);
+        c.fillStyle="#70f39a";c.fillRect(a.x+(hold.goal-.07)*a.w,y+42,.14*a.w*Math.min(1,hold.time),4);
+        multiCircle(a.x+hold.x*a.w,y,10,"#ffad12");
+        c.fillStyle="#f5f7f8";c.font="bold 13px sans-serif";c.textAlign="center";
+        c.fillText(hold.time.toFixed(1)+" / 1.0s",a.x+a.w/2,y+76);
+      }
+      if(multi.phase>=4) {
+        a=multiArea(3);
+        c.fillStyle="#39413f";c.fillRect(a.x,a.y+a.h*.96,a.w,a.h*.04);
+        c.strokeStyle="#715b78";
+        for(let i=0;i<8;i++){const x=a.x+((i/7-multi.elapsed*.15)%1+1)%1*a.w;c.beginPath();c.moveTo(x,a.y+a.h*.96);c.lineTo(x+12,a.y+a.h*.9);c.stroke();}
+        c.save();
+        c.beginPath();c.rect(a.x,a.y,a.w,a.h);c.clip();
+        for(const obstacle of multi.flightObstacles) {
+          const top=obstacle.bottom ? 1-obstacle.h : 0;
+          c.fillStyle="rgba(255,95,109,.22)";c.strokeStyle="#ff5f6d";c.lineWidth=2;
+          c.fillRect(a.x+obstacle.x*a.w,a.y+top*a.h,obstacle.w*a.w,obstacle.h*a.h);
+          c.strokeRect(a.x+obstacle.x*a.w,a.y+top*a.h,obstacle.w*a.w,obstacle.h*a.h);
+        }
+        c.restore();
+        const x=a.x+a.w*.35,y=a.y+a.h*multi.float.y;
+        c.save();c.shadowColor="#58d7ff";c.shadowBlur=12;
+        multiCircle(x,y,10,"#58d7ff");
+        c.shadowBlur=0;multiCircle(x-2,y-2,3,"#effcff");c.restore();
+      }
+      if(multi.phase>=5) {
+        a=multiMapArea();
+        c.fillStyle="#223a2c";c.fillRect(a.x,a.y,a.w,a.h);
+        c.strokeStyle="#467c87";c.lineWidth=12;c.beginPath();c.moveTo(a.x,a.y);c.lineTo(a.x+a.w,a.y+a.h);c.stroke();
+        for(const [name,points] of Object.entries(multiLanes)){
+          c.strokeStyle="#c4bda3";c.lineWidth=Math.max(12,a.w*.06);c.lineJoin="round";c.beginPath();
+          points.forEach((p,i)=>i?c.lineTo(a.x+p[0]*a.w,a.y+p[1]*a.h):c.moveTo(a.x+p[0]*a.w,a.y+p[1]*a.h));c.stroke();
+          const label=name==="TOP"?[.3,.12]:name==="BOT"?[.7,.88]:[.5,.5];
+          c.fillStyle="#14261a";c.font="bold 13px sans-serif";c.textAlign="center";c.fillText(name,a.x+label[0]*a.w,a.y+label[1]*a.h+4);
+        }
+        multiCircle(a.x+a.w*.12,a.y+a.h*.88,10,"#6de7e0");
+        multiCircle(a.x+a.w*.88,a.y+a.h*.12,10,"#ff758c");
+      }
+    }
+    function multiMapArea() {
+      const a=multiArea(4),size=Math.min(a.w,a.h);
+      return {x:a.x+(a.w-size)/2,y:a.y+(a.h-size)/2,w:size,h:size};
+    }
+    function segmentDistance(x,y,p,q) {
+      const dx=q[0]-p[0],dy=q[1]-p[1];
+      const t=Math.max(0,Math.min(1,((x-p[0])*dx+(y-p[1])*dy)/(dx*dx+dy*dy)));
+      return Math.hypot(x-p[0]-t*dx,y-p[1]-t*dy);
+    }
+    multiCanvas.addEventListener("pointerdown",event=>{
+      if(!multi.running || multi.intro || event.button!==0)return;
+      event.preventDefault();
+      const rect=multiCanvas.getBoundingClientRect(),x=event.clientX-rect.left,y=event.clientY-rect.top;
+      const panes=multiRects(),index=panes.findIndex(r=>x>=r.x&&x<r.x+r.w&&y>=r.y&&y<r.y+r.h);
+      if(index===0) {
+        const a=multiArea(0),radius=multiTargetRadius(a);
+        const i=multi.targets.findIndex(t=>Math.hypot(x-a.x-t.x*a.w,y-a.y-t.y*a.h)<=radius+5);
+        if(i<0)return;
+        multi.targets[i].hp--;playSound("hit");
+        const burst=document.createElement("div");
+        burst.className="hit-burst";
+        burst.style.setProperty("--x",(a.x+multi.targets[i].x*a.w)+"px");
+        burst.style.setProperty("--y",(a.y+multi.targets[i].y*a.h)+"px");
+        burst.style.setProperty("--size",radius*2+"px");
+        multiTargets.appendChild(burst);
+        setTimeout(()=>burst.remove(),420);
+        if(multi.targets[i].hp===0)multi.targets[i]=multiTarget(i);
+      }
+      if(index===4&&multi.lane) {
+        const a=multiMapArea(),nx=(x-a.x)/a.w,ny=(y-a.y)/a.h;
+        const points=multiLanes[multi.lane];
+        if(points.slice(1).some((p,i)=>segmentDistance(nx,ny,points[i],p)<=.085)) {
+          multi.lane="";multi.nextLane=multi.elapsed+3;playSound("hit");
+        } else endMultitask("MAP / 指定と違うレーン");
+      }
+      multiDraw();
+    });
+    multiLayer.addEventListener("pointermove",updateCursorPosition,{passive:true});
+    if ("onpointerrawupdate" in window) multiLayer.addEventListener("pointerrawupdate",updateCursorPosition,{passive:true});
+    multiLayer.addEventListener("pointerleave",()=>cursorAim.classList.remove("show"));
+    multiLayer.addEventListener("pointerdown",event=>{
+      updateCursorPosition(event);
+      cursorAim.classList.add("click");
+      setTimeout(()=>cursorAim.classList.remove("click"),90);
+    });
+    multiLayer.addEventListener("contextmenu",event=>event.preventDefault());
+    window.addEventListener("keydown",event=>{
+      if(multiLayer.hidden)return;
+      if(!multi.running) {
+        event.stopImmediatePropagation();
+        if(["Space","Enter","Escape","KeyW","KeyA","KeyS","KeyD"].includes(event.code)) event.preventDefault();
+        return;
+      }
+      if(event.code==="Escape"){event.preventDefault();event.stopImmediatePropagation();leaveMultitask();return;}
+      if(multi.intro) {
+        event.stopImmediatePropagation();
+        if(["Space","Enter","KeyW","KeyA","KeyS","KeyD"].includes(event.code))event.preventDefault();
+        return;
+      }
+      if(["KeyW","KeyA","KeyS","KeyD","Space","Enter"].includes(event.code)){
+        event.preventDefault();event.stopImmediatePropagation();
+        multi.keys.add(event.code);
+      }
+    },true);
+    window.addEventListener("keyup",event=>{
+      multi.keys.delete(event.code);
+      if(!multiLayer.hidden&&!multi.running) {
+        event.stopImmediatePropagation();
+        if(event.code==="Space"||event.code==="Enter")event.preventDefault();
+      }
+    },true);
+    window.addEventListener("blur",()=>{if(multi.running)endMultitask("中断 / フォーカスが外れました");});
+    document.addEventListener("visibilitychange",()=>{if(document.hidden&&multi.running)endMultitask("中断 / タブが非表示になりました");});
+    window.addEventListener("resize",()=>{if(!multiLayer.hidden)multiResize();});
+    document.getElementById("multiExit").addEventListener("click",leaveMultitask);
+    document.getElementById("multiMenu").addEventListener("click",leaveMultitask);
+    document.getElementById("multiRetry").addEventListener("click",startMultitask);
+    for (const [id,tasks] of [["multitaskBtn",4],["multitaskFiveBtn",5]]) {
+      document.getElementById(id).addEventListener("click",()=>{
+        const enabled=!(state.multitask && state.multitaskTasks===tasks);
+        state.attackMove=state.gridShot=state.apmMode=state.survivalMode=false;
+        updateShotModeButtons();
+        state.multitask=enabled;
+        state.multitaskTasks=tasks;
+        document.getElementById(id).setAttribute("aria-pressed",String(enabled));
+        document.getElementById(id).textContent="Multitask "+tasks+(enabled?" ON":"");
+        playSound("toggle");
+      });
+    }
 
     updateOptions();
     setDuration(60);
