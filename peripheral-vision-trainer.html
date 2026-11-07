@@ -251,7 +251,7 @@
         inset 5px 5px 13px rgba(255, 255, 255, 0.14);
       transform: translate(-50%, -50%) scale(0.72);
       opacity: 0;
-      filter: saturate(var(--target-saturation, 1)) brightness(var(--target-brightness, 1));
+      filter: hue-rotate(var(--group-hue, 0deg)) saturate(var(--target-saturation, 1)) brightness(var(--target-brightness, 1));
       cursor: default;
       animation: targetIn 150ms cubic-bezier(.2, .8, .2, 1) forwards;
       will-change: transform, opacity;
@@ -504,6 +504,7 @@
     .menu {
       position: absolute;
       inset: 0;
+      max-height: 100dvh;
       z-index: 30;
       display: grid;
       place-items: center;
@@ -513,7 +514,10 @@
 
     .menu-inner {
       width: min(860px, 100%);
-      display: grid;
+      max-height: 100%;
+      min-height: 0;
+      display: flex;
+      flex-direction: column;
       gap: 18px;
       justify-items: center;
       pointer-events: auto;
@@ -609,6 +613,35 @@
       opacity: 0;
       transform: translateY(8px);
       animation: fadeUp 360ms 150ms ease forwards;
+      min-height: 0;
+      grid-template-rows: minmax(0, 1fr) auto;
+    }
+
+    .settings-scroll {
+      min-height: 0;
+      overflow-y: auto;
+      overscroll-behavior: contain;
+      scrollbar-gutter: stable;
+      display: grid;
+      gap: 14px;
+      padding: 2px 6px;
+    }
+
+    .menu-inner > .title-block {
+      flex-shrink: 0;
+    }
+
+    .menu-inner > .safety-panel,
+    .menu-inner > .results {
+      min-height: 0;
+      overflow-y: auto;
+    }
+
+    @media (max-height: 700px) {
+      .menu { padding-top: 80px; padding-bottom: 70px; }
+      .menu-inner { gap: 10px; }
+      .title-block h1 { font-size: 28px; }
+      .title-block p { display: none; }
     }
 
     .tab-list {
@@ -1379,6 +1412,13 @@
     #multiIntro h3 { margin:0 0 10px; font-size:17px; color:var(--orange); }
     #multiIntro p { margin:0 0 14px; font-size:13px; line-height:1.7; }
     #multiIntro .button { min-width:0; padding:10px 20px; }
+    .apm-key-legend{display:none;position:absolute;right:24px;bottom:120px;z-index:15;pointer-events:none;background:#10151de8;padding:10px 14px;border-radius:6px;border:1px solid #ffffff35;color:white;font-size:13px}
+    .apm-key-legend .key-row{display:flex;gap:12px;margin-top:8px}
+    .apm-key-legend .key-chip{display:grid;place-items:center;width:38px;height:38px;border:2px solid var(--key-color);border-radius:4px;color:white;background:#10151d}
+    .apm-key-legend .key-chip.active{background:var(--key-color);color:#081018;outline:2px solid white;outline-offset:2px;font-weight:bold}
+    .stage.playing.color-hold-active .apm-key-legend{display:block}
+    .stage.playing.color-hold-active::after{content:"";position:absolute;inset:0;z-index:8;pointer-events:none;border:5px solid var(--hold-color);box-shadow:inset 0 0 65px -24px var(--hold-color)}
+    @media(max-width:600px){.apm-key-legend{right:12px;bottom:120px;padding:8px}.apm-key-legend .key-chip{width:30px;height:30px}.apm-key-legend .key-row{gap:8px}}
   </style>
 </head>
 <body>
@@ -1421,6 +1461,7 @@
         </div>
 
         <div class="control-panel" id="controls">
+          <div class="settings-scroll" tabindex="0" aria-label="ゲーム設定">
           <div class="mode-row" aria-label="時間モード">
             <button class="segmented helpable" type="button" data-duration="30" aria-pressed="false" data-help="短時間で軽く試すモードです。初回やウォームアップ向きです。">30秒モード</button>
             <button class="segmented helpable" type="button" data-duration="60" aria-pressed="true" data-help="標準的な長さです。集中を保ちながらスコアを伸ばしやすい設定です。">60秒モード</button>
@@ -1439,6 +1480,10 @@
               的の大きさ <output id="targetSizeText">標準</output>
               <input id="targetSize" type="range" min="75" max="145" value="100">
             </label>
+            <label class="field helpable" data-help="通常・GridShot・APM・Survivalの的を動かします。3×3・Attack Move・マルチタスクには適用しません。">
+              的の移動 <output id="targetMotionText">OFF</output>
+              <input id="targetMotion" type="range" min="0" max="3" step="1" value="0">
+            </label>
             <label class="field helpable" data-help="中心視野の近くに的が出にくくなります。広げるほど周辺視野を使います。">
               中央除外範囲 <output id="deadzoneText">広め</output>
               <input id="deadzone" type="range" min="18" max="42" value="30">
@@ -1456,10 +1501,17 @@
             <button class="button ghost helpable" type="button" id="calmBtn" data-help="背景の刺激を少し抑えます。視覚ノイズを減らしたいときに使います。">集中モード</button>
             <button class="button ghost helpable" type="button" id="movingFocusBtn" data-help="中心のレティクルがゆっくり動きます。追視と周辺視野を同時に使う高負荷モードです。">中心移動</button>
             <button class="button ghost helpable" type="button" id="gridShotBtn" data-help="的を常に3つ表示します。撃つとノーディレイで補充されます。">GridShot</button>
+            <button class="button ghost helpable" type="button" id="gridNineBtn" aria-pressed="false" data-help="中央の狭い3×3の配置に大きめの的を常に3つ表示。撃つと空いている枠へ即補充されます。">GridShot 3×3</button>
             <button class="button ghost helpable" type="button" id="apmBtn" data-help="5から1まで数字の的を順番に撃ちます。5個を消すとすぐ次の5個が出ます。">APM</button>
+            <button class="button ghost helpable" type="button" id="apmColorBtn" aria-pressed="false" data-help="周囲のライトと同じ色のQ・W・E・Rを押しながら5→1を撃ちます。1まで撃ち終えると次の色に切り替わります。">APM Color Hold</button>
             <button class="button ghost helpable" type="button" id="survivalBtn" data-help="3回外したら即ゲームオーバーです。正確さを崩さず撃ち続けるモードです。">Survival</button>
             <button class="button ghost helpable" type="button" id="attackMoveBtn" aria-pressed="false" data-help="水色のMOVEを右クリックしてから、Aキー→オレンジの的を左クリック。1発ごとにMOVEの右クリックが必要です。">Attack Move</button>
             <button class="button ghost helpable" type="button" id="soundBtn" data-help="効果音のON/OFFです。音量は画面下のVOLで調整できます。">Sound ON</button>
+          </div>
+          <div class="mode-row">
+            <button class="button ghost helpable" type="button" id="gridManyBtn" aria-pressed="false" data-help="80個を自由な順番で撃ちます。全部消すと次のセットへ。">GridShot 80</button>
+            <button class="button ghost helpable" type="button" id="colorManyBtn" aria-pressed="false" data-help="4色各20個。指定色を消すと次の色へ。違う色はミス。">ColorShot 80</button>
+            <label class="helpable" data-help="80個撃つと次のラウンドへ。選択した秒数から毎回2秒短縮（最短5秒）。時間切れまで無限に続きます。"><input id="manyChallenge" type="checkbox"> チャレンジ</label>
           </div>
           <div class="attack-settings" id="attackSettings" hidden>
             <label title="通常攻撃の練習用近似。攻撃間隔の20%が溜め時間で、その間のMOVEは攻撃をキャンセルします。Q・ルーン・装備固有効果は再現しません。"><input id="attackTiming" type="checkbox">AS</label>
@@ -1476,13 +1528,14 @@
           <button class="button ghost helpable" type="button" id="multitaskBtn" aria-pressed="false" data-help="的・WS回避・AD位置キープ・SPACE飛行の4タスク。10秒ごとに追加され、30秒以降は4つのまま続きます。">Multitask 4</button>
           <button class="button ghost helpable" type="button" id="multitaskFiveBtn" aria-pressed="false" data-help="最初の4タスクに加え、40秒からミニマップのレーン指定も追加される5タスク版です。">Multitask 5</button>
           <div class="mode-help" id="modeHelp" aria-live="polite"></div>
-          <div class="start-row">
-            <button class="button helpable" type="button" id="startBtn" data-help="選んだ設定でトレーニングを開始します。">Start</button>
-          </div>
           <section class="ranking" aria-label="ランキング">
             <h3 id="rankingTitle">Ranking</h3>
             <ol class="ranking-list" id="rankingList"></ol>
           </section>
+          </div>
+          <div class="start-row">
+            <button class="button helpable" type="button" id="startBtn" data-help="選んだ設定でトレーニングを開始します。">Start</button>
+          </div>
         </div>
 
         <section class="results" id="results" aria-label="結果">
@@ -1540,6 +1593,7 @@
       <button type="button" data-cursor-style="dot" aria-pressed="false">Dot</button>
       <button type="button" data-cursor-style="ring" aria-pressed="false">Ring</button>
       <button type="button" data-cursor-style="bright" aria-pressed="false">Bright</button>
+      <label><input type="checkbox" id="blockSideButtons" checked> サイドボタン無効</label>
       <button type="button" id="cursorPanelClose">Close</button>
     </div>
     <button class="release-toggle" type="button" id="releaseNotesBtn" aria-expanded="false" aria-controls="releaseNotesPanel">更新情報</button>
@@ -1668,7 +1722,11 @@
       safetyAccepted: false,
       calm: false,
       gridShot: false,
+      gridNine: false,
+      gridMany: false,
+      gridColor: false,
       apmMode: false,
+      apmColorHold: false,
       survivalMode: false,
       attackMove: false,
       attackArmed: false,
@@ -1871,8 +1929,8 @@
 
     function eventName() {
       if (state.attackMove) return `Attack Move${state.attackTiming ? ` / AS ${state.attackSpeed.toFixed(3)}` : ""}${state.movingFocus ? " + 中心移動" : ""}`;
-      if (state.apmMode) return `APM${state.movingFocus ? " + 中心移動" : ""}`;
-      if (state.gridShot) return `GridShot${state.movingFocus ? " + 中心移動" : ""}`;
+      if (state.apmMode) return `APM${state.apmColorHold ? " Color Hold" : ""}${state.movingFocus ? " + 中心移動" : ""}`;
+      if (state.gridShot) return `${state.gridMany && state.gridColor ? "ColorShot" : "GridShot"}${state.gridMany ? " 80" : state.gridNine ? " 3×3" : ""}${state.gridMany && document.getElementById("manyChallenge").checked ? " Challenge" : ""}${state.movingFocus ? " + 中心移動" : ""}`;
       if (state.survivalMode) return `Survival${state.movingFocus ? " + 中心移動" : ""}`;
       if (state.movingFocus) return "中心移動";
       return "通常";
@@ -1880,7 +1938,8 @@
 
     function eventKey(duration = state.duration) {
       if (state.attackMove) return `attack-move-${state.attackTiming ? `as20-${state.attackSpeed.toFixed(3)}-` : ""}${state.movingFocus ? "moving" : "static"}-${duration}`;
-      const mode = state.apmMode ? "apm-arealme" : state.gridShot ? "grid" : state.survivalMode ? "survival" : "single";
+      const manyMode = (state.gridColor ? "color-80" : "grid-80") + (document.getElementById("manyChallenge").checked ? "-endless2" : "-wave");
+      const mode = state.apmMode ? (state.apmColorHold ? "apm-color-hold-v2" : "apm-arealme") : state.gridShot ? (state.gridMany ? manyMode : state.gridNine ? "grid-3x3" : "grid") : state.survivalMode ? "survival" : "single";
       return `${mode}-${state.movingFocus ? "moving" : "static"}-${duration}`;
     }
 
@@ -2074,6 +2133,10 @@
     }
 
     function clearTarget(keepMoveZone = false) {
+      colorGroupHud.hidden = true;
+      state.activeColorGroup = null;
+      cancelAnimationFrame(state.apmMotionFrame);
+      state.apmMotionFrame = null;
       if (state.attackPending) resetAttackTiming();
       if (!keepMoveZone) {
         state.moveZone?.remove();
@@ -2171,7 +2234,28 @@
       state.focusAnimation = requestAnimationFrame(animateFocus);
     }
 
+    function manyGridLayout() {
+      const rect = stage.getBoundingClientRect();
+      return { width: Math.max(1, Math.min(1100, rect.width - 48)),
+        height: Math.max(1, rect.height - 260), x: rect.width / 2, y: rect.height / 2 };
+    }
+    function manyGridPoint(position, layout) {
+      return {
+        x: layout.x + (position.nx - .5) * layout.width,
+        y: layout.y + (position.ny - .5) * layout.height
+      };
+    }
+    function gridNineLayout() {
+      const rect = stage.getBoundingClientRect();
+      const pitch = Math.max(24, Math.min(180, (rect.width-48)/3.2, (rect.height-220)/3.2));
+      return { pitch, x: rect.width/2, y: rect.height/2 };
+    }
     function targetSizeForViewport() {
+      if (state.gridShot && state.gridMany) {
+        const layout = manyGridLayout();
+        return Math.round(Math.min(44, Math.sqrt(layout.width * layout.height / 40) * .42) * Number(targetSize.value) / 100);
+      }
+      if (state.gridShot && state.gridNine) return Math.round(gridNineLayout().pitch * Math.min(.94,.88*Number(targetSize.value)/100));
       const rect = stage.getBoundingClientRect();
       const minViewport = Math.min(rect.width, rect.height);
       const base = minViewport * 0.14;
@@ -2189,7 +2273,36 @@
       setTimeout(() => burst.remove(), 420);
     }
 
+    function avoidColorHoldLegend(x, y, size) {
+      if (!state.apmMode || !state.apmColorHold || !state.playing) return { x, y };
+      const stageRect = stage.getBoundingClientRect();
+      const legend = colorHoldLegend.getBoundingClientRect();
+      if (!legend.width || !legend.height) return { x, y };
+      const gap = size / 2 + 16;
+      const left = legend.left - stageRect.left - gap;
+      const right = legend.right - stageRect.left + gap;
+      const top = legend.top - stageRect.top - gap;
+      const bottom = legend.bottom - stageRect.top + gap;
+      if (x <= left || x >= right || y <= top || y >= bottom) return { x, y };
+      const padding = size / 2 + 12;
+      const candidates = [{x:left,y},{x:right,y},{x,y:top},{x,y:bottom}]
+        .filter(p => p.x >= padding && p.x <= stageRect.width - padding
+          && p.y >= padding && p.y <= stageRect.height - padding);
+      candidates.sort((a,b) => Math.hypot(a.x-x,a.y-y)-Math.hypot(b.x-x,b.y-y));
+      return candidates[0] || {x:Math.max(padding,Math.min(x,left)),y:Math.max(padding,Math.min(y,top))};
+    }
+
     function chooseTargetPosition(size) {
+      if (state.gridShot && state.gridMany) {
+        const layout = manyGridLayout();
+        return manyGridPoint({ nx: Math.random(), ny: Math.random() }, layout);
+      }
+      if (state.gridShot && state.gridNine) {
+        const layout=gridNineLayout();
+        const free=Array.from({length:9},(_,cell)=>cell).filter(cell=>!state.targets.some(t=>t.cell===cell));
+        const cell=free[Math.floor(Math.random()*free.length)];
+        return {cell,x:layout.x+(cell%3-1)*layout.pitch,y:layout.y+(Math.floor(cell/3)-1)*layout.pitch};
+      }
       const rect = stage.getBoundingClientRect();
       const centerX = rect.width * state.focus.x;
       const centerY = rect.height * state.focus.y;
@@ -2221,7 +2334,7 @@
         }
         const overlaps = !state.apmMode && state.targets.some((target) => Math.hypot(x - target.x, y - target.y) < size * 1.35);
         if (distance >= minDistance && (!state.apmMode || distance <= apmMaxDistance) && !overlaps) {
-          return { x, y };
+          return avoidColorHoldLegend(x, y, size);
         }
       }
 
@@ -2231,7 +2344,44 @@
         : minDistance + Math.random() * Math.max(30, Math.min(rect.width, rect.height) * 0.28);
       const x = Math.min(rect.width - marginSide, Math.max(marginSide, centerX + Math.cos(angle) * distance));
       const y = Math.min(rect.height - marginBottom, Math.max(marginTop, centerY + Math.sin(angle) * distance));
-      return { x, y };
+      return avoidColorHoldLegend(x, y, size);
+    }
+
+    const targetMotion = document.getElementById("targetMotion");
+    targetMotion.addEventListener("input", () => {
+      document.getElementById("targetMotionText").textContent =
+        ["OFF", "ゆっくり", "標準", "速め"][Number(targetMotion.value)];
+    });
+    function targetMotionEnabled() {
+      return Number(targetMotion.value) > 0 && !state.gridNine && !state.gridMany && !state.attackMove && !state.multitask;
+    }
+
+    function animateApmTargets(now) {
+      state.apmMotionFrame = null;
+      if (!state.playing || !targetMotionEnabled() || !state.targets.length) return;
+      const rect = stage.getBoundingClientRect();
+      for (const target of state.targets) {
+        const drift = target.drift;
+        if (!drift) continue;
+        const elapsed = (now - target.born) / 1000 * [0, .5, 1, 1.7][Number(targetMotion.value)];
+        const padding = target.size / 2 + 12;
+        const maxX = Math.max(padding, rect.width - padding);
+        const minY = Math.min(rect.height / 2, padding + 70);
+        const maxY = Math.max(minY, rect.height - padding - 90);
+        target.x = Math.max(padding, Math.min(maxX,
+          drift.x + 70 * (Math.sin(elapsed * .45 + drift.phase) - Math.sin(drift.phase))));
+        target.y = Math.max(minY, Math.min(maxY,
+          drift.y + 55 * (Math.cos(elapsed * .45 + drift.phase) - Math.cos(drift.phase))));
+        const safePoint = avoidColorHoldLegend(target.x, target.y, target.size);
+        target.x = safePoint.x;
+        target.y = safePoint.y;
+        target.element.style.setProperty("--x", target.x + "px");
+        target.element.style.setProperty("--y", target.y + "px");
+        if (state.target === target.element) {
+          state.targetPoint = { x: target.x, y: target.y, size: target.size };
+        }
+      }
+      state.apmMotionFrame = requestAnimationFrame(animateApmTargets);
     }
 
     function createTarget(label = "", order = null) {
@@ -2239,7 +2389,7 @@
 
       const level = Number(difficulty.value);
       const size = targetSizeForViewport();
-      const { x, y } = chooseTargetPosition(size);
+      const { x, y, cell } = chooseTargetPosition(size);
       const target = document.createElement("button");
       target.className = "target";
       if (state.apmMode && order === apmStartNumber) {
@@ -2263,7 +2413,28 @@
         target.appendChild(labelEl);
       }
       stage.appendChild(target);
-      const targetRecord = { element: target, x, y, size, born: performance.now(), label, order };
+      const targetRecord = { element: target, x, y, size, born: performance.now(), label, order, cell };
+      if (state.gridMany) {
+        if (state.gridColor) {
+        targetRecord.colorGroup = state.targets.length % 4;
+        const group = targetColorGroups[targetRecord.colorGroup];
+        target.style.setProperty("--group-hue", group.hue + "deg");
+        target.setAttribute("aria-label", group.name + "の的");
+        const mark = document.createElement("span");
+        mark.textContent = group.mark;
+        mark.style.cssText = "position:relative;z-index:2;color:#fff;font-size:12px;font-weight:800;pointer-events:none";
+        target.appendChild(mark);
+        }
+        const layout = manyGridLayout();
+        targetRecord.nx = (x - layout.x) / layout.width + .5;
+        targetRecord.ny = (y - layout.y) / layout.height + .5;
+      }
+      if (targetMotionEnabled()) {
+        targetRecord.drift = { x, y, phase: Math.random() * Math.PI * 2 };
+        if (state.apmMotionFrame == null) {
+          state.apmMotionFrame = requestAnimationFrame(animateApmTargets);
+        }
+      }
       if (state.attackMove) {
         targetRecord.hp = 3;
         const health = document.createElement("span");
@@ -2365,11 +2536,40 @@
       if (state.attackMove) createMoveZone();
     }
 
+    const targetColorGroups = [
+      { name: "オレンジ", mark: "A", hue: 0, color: "#ffad12" },
+      { name: "緑", mark: "B", hue: 85, color: "#70f39a" },
+      { name: "青", mark: "C", hue: 175, color: "#58bfff" },
+      { name: "ピンク", mark: "D", hue: 285, color: "#ff83cc" }
+    ];
+    const colorGroupHud = document.createElement("div");
+    colorGroupHud.hidden = true;
+    colorGroupHud.setAttribute("role", "status");
+    colorGroupHud.id = "colorGroupHud";
+    colorGroupHud.style.cssText = "position:absolute;top:100px;left:50%;transform:translateX(-50%);z-index:28;pointer-events:none;background:#171818;padding:6px 12px;border:1px solid currentColor;font-size:16px;font-weight:800;white-space:nowrap";
+    stage.appendChild(colorGroupHud);
+    function updateColorGroup() {
+      const remaining = [...new Set(state.targets.map(t => t.colorGroup))];
+      if (!remaining.includes(state.activeColorGroup)) {
+        state.activeColorGroup = remaining[Math.floor(Math.random() * remaining.length)];
+      }
+      const group = targetColorGroups[state.activeColorGroup];
+      if (!group) return;
+      const count = state.targets.filter(t => t.colorGroup === state.activeColorGroup).length;
+      colorGroupHud.hidden = false;
+      colorGroupHud.style.color = group.color;
+      colorGroupHud.textContent = group.mark + " " + group.name + " / 残り " + count;
+      state.targets.forEach(t => {
+        t.element.style.zIndex = t.colorGroup === state.activeColorGroup ? "22" : "12";
+      });
+    }
     function fillGridTargets() {
       if (!state.playing || !state.gridShot) return;
-      while (state.targets.length < 3) {
+      if (state.gridMany && state.targets.length > 0) { if (state.gridColor) updateColorGroup(); return; }
+      while (state.targets.length < (state.gridMany ? 80 : 3)) {
         createTarget();
       }
+      if (state.gridMany && state.gridColor) updateColorGroup();
     }
 
     function fillApmTargets() {
@@ -2581,6 +2781,21 @@
 
     function handleTargetPress(targetRecord) {
       if (!targetRecord || !state.playing) return;
+      if (state.apmMode && state.apmColorHold) {
+        updateColorHold();
+        const required = colorHoldKeys[colorHoldIndex];
+        if (!heldColorKeys.has(required.code)) {
+          registerMiss(targetRecord.x, targetRecord.y, targetRecord.size, false);
+          showFeedback(`${required.key} HOLD`, false);
+          return;
+        }
+      }
+      if (isManyChallenge() && performance.now() >= state.roundDeadline) { endGame(); return; }
+      if (state.gridMany && state.gridColor && targetRecord.colorGroup !== state.activeColorGroup) {
+        registerMiss(targetRecord.x, targetRecord.y, targetRecord.size, false);
+        showFeedback(targetColorGroups[state.activeColorGroup].name + " FIRST", false);
+        return;
+      }
       if (state.attackMove && state.attackTiming) {
         beginTimedAttack(targetRecord);
         return;
@@ -2598,6 +2813,7 @@
         registerHit(targetRecord.x, targetRecord.y, targetRecord.size, targetRecord);
         state.apmNext -= 1;
         if (state.apmNext < 1) {
+          updateColorHold();
           fillApmTargets();
           showFeedback("NEXT SET", true);
         } else {
@@ -2637,6 +2853,7 @@
       }
       updateHud();
       showFeedback("HIT", true);
+      if (isManyChallenge() && state.targets.length === 0) beginChallengeRound(state.challengeRound + 1);
       if (state.gridShot) {
         fillGridTargets();
       } else if (state.apmMode) {
@@ -2674,6 +2891,18 @@
       }
     }
 
+    function isManyChallenge() {
+      return state.gridShot && state.gridMany && document.getElementById("manyChallenge").checked;
+    }
+    function beginChallengeRound(round) {
+      state.challengeRound = round;
+      state.roundDuration = Math.max(5, state.sessionDuration - (round - 1) * 2);
+      state.roundDeadline = performance.now() + state.roundDuration * 1000;
+      state.remaining = state.roundDuration;
+      timeEl.textContent = state.remaining + " / R" + round;
+      timerFill.style.transform = "scaleX(1)";
+      if (round > 1) showFeedback("ROUND " + round, true);
+    }
     function startGame() {
       if (state.multitask) { startMultitask(); return; }
       clearInterval(state.gameTimer);
@@ -2684,6 +2913,8 @@
       state.playing = true;
       updateAttackReadiness();
       state.startedAt = performance.now();
+      startColorHold();
+      if (isManyChallenge()) beginChallengeRound(1);
       stage.classList.add("playing");
       titleBlock.classList.add("hidden");
       controls.classList.add("hidden");
@@ -2692,9 +2923,11 @@
       spawnTarget();
 
       state.gameTimer = setInterval(() => {
-        state.remaining -= 1;
-        timeEl.textContent = state.remaining;
-        timerFill.style.transform = `scaleX(${Math.max(0, state.remaining / state.duration)})`;
+        state.remaining = isManyChallenge()
+          ? Math.max(0, Math.ceil((state.roundDeadline - performance.now()) / 1000))
+          : state.remaining - 1;
+        timeEl.textContent = isManyChallenge() ? state.remaining + " / R" + state.challengeRound : state.remaining;
+        timerFill.style.transform = `scaleX(${Math.max(0, state.remaining / (isManyChallenge() ? state.roundDuration : state.duration))})`;
         updateHud();
         if (state.remaining <= 0) {
           endGame();
@@ -2703,6 +2936,7 @@
     }
 
     function endGame() {
+      stopColorHold();
       resetAttackTiming();
       setAttackArmed(false);
       state.playing = false;
@@ -2717,6 +2951,9 @@
         : 0;
       state.score = currentScoreValue();
       resultTitle.textContent = state.survivalMode && state.survivalMisses >= survivalMissLimit ? "Game Over" : "Training Complete";
+      if (state.gridMany && document.getElementById("manyChallenge").checked) {
+        resultTitle.textContent = "Time Up / Round " + state.challengeRound;
+      }
       resultScore.textContent = state.score;
       resultAccuracy.textContent = `${accuracy}%`;
       resultCombo.textContent = state.bestCombo;
@@ -2731,6 +2968,7 @@
     }
 
     function showMenu() {
+      stopColorHold();
       resetAttackTiming();
       state.playing = false;
       clearInterval(state.gameTimer);
@@ -2866,6 +3104,14 @@
     });
 
     function updateShotModeButtons() {
+      if (!state.gridShot) state.gridMany = false;
+      document.getElementById("gridManyBtn").setAttribute("aria-pressed", String(state.gridShot && state.gridMany && !state.gridColor));
+      document.getElementById("gridManyBtn").textContent = state.gridShot && state.gridMany && !state.gridColor ? "GridShot 80 ON" : "GridShot 80";
+      document.getElementById("colorManyBtn").setAttribute("aria-pressed", String(state.gridShot && state.gridMany && state.gridColor));
+      document.getElementById("manyChallenge").disabled = !state.gridMany;
+      if (!state.gridShot) state.gridNine=false;
+      document.getElementById("gridNineBtn").setAttribute("aria-pressed",String(state.gridShot&&state.gridNine));
+      document.getElementById("gridNineBtn").textContent=state.gridShot&&state.gridNine?"GridShot 3×3 ON":"GridShot 3×3";
       state.multitask = false;
       document.getElementById("multitaskBtn").setAttribute("aria-pressed", "false");
       document.getElementById("multitaskBtn").textContent = "Multitask 4";
@@ -2876,8 +3122,8 @@
       setAttackArmed(false);
       attackMoveBtn.setAttribute("aria-pressed", String(state.attackMove));
       attackMoveBtn.textContent = state.attackMove ? "Attack Move ON" : "Attack Move";
-      gridShotBtn.setAttribute("aria-pressed", String(state.gridShot));
-      gridShotBtn.textContent = state.gridShot ? "GridShot ON" : "GridShot";
+      gridShotBtn.setAttribute("aria-pressed", String(state.gridShot&&!state.gridNine&&!state.gridMany));
+      gridShotBtn.textContent = state.gridShot&&!state.gridNine&&!state.gridMany ? "GridShot ON" : "GridShot";
       apmBtn.setAttribute("aria-pressed", String(state.apmMode));
       apmBtn.textContent = state.apmMode ? "APM ON" : "APM";
       survivalBtn.setAttribute("aria-pressed", String(state.survivalMode));
@@ -2890,6 +3136,45 @@
       releaseNotesPanel.classList.toggle("open", open);
       releaseNotesBtn.setAttribute("aria-expanded", String(open));
     }
+
+    const blockSideButtons = document.getElementById("blockSideButtons");
+    const sideButtonsKey = "eyesforge-block-side-buttons-v1";
+    try {
+      blockSideButtons.checked = localStorage.getItem(sideButtonsKey) !== "false";
+    } catch {}
+    blockSideButtons.addEventListener("change", () => {
+      try {
+        localStorage.setItem(sideButtonsKey, String(blockSideButtons.checked));
+      } catch {}
+    });
+    // Cancel both down and up defaults before game handlers see side buttons.
+    for (const type of ["pointerdown", "pointerup", "pointermove", "mousedown", "mouseup", "auxclick", "click"]) {
+      window.addEventListener(type, (event) => {
+        // Chorded presses can arrive as pointermove; buttons contains held buttons.
+        const sideButton = event.button === 3 || event.button === 4;
+        const sideHeld = (event.buttons & 24) !== 0;
+        if (!blockSideButtons.checked || (!sideButton && !sideHeld)) return;
+        event.preventDefault();
+        // Keep cursor tracking and ordinary left/right shots while a side button is held.
+        if (sideButton || event.type === "auxclick") event.stopImmediatePropagation();
+      }, { capture: true, passive: false });
+    }
+
+    for (const type of ["keydown", "keyup"]) {
+      window.addEventListener(type, (event) => {
+        if (!blockSideButtons.checked) return;
+        if (!["BrowserBack", "BrowserForward"].includes(event.key) &&
+            !["BrowserBack", "BrowserForward"].includes(event.code)) return;
+        event.preventDefault();
+        event.stopImmediatePropagation();
+      }, { capture: true });
+    }
+    // Native browser commands can bypass mouse events; protect active sessions.
+    window.addEventListener("beforeunload", (event) => {
+      if (!blockSideButtons.checked || (!state.playing && !multi.running)) return;
+      event.preventDefault();
+      event.returnValue = true;
+    });
 
     cursorPanelBtn.addEventListener("click", () => {
       cursorPanel.classList.toggle("open");
@@ -2952,7 +3237,9 @@
     });
 
     gridShotBtn.addEventListener("click", () => {
-      state.gridShot = !state.gridShot;
+      state.gridShot = !state.gridShot || state.gridNine || state.gridMany;
+      state.gridMany = false;
+      state.gridNine = false;
       if (state.gridShot) {
         state.apmMode = false;
         state.survivalMode = false;
@@ -2966,8 +3253,56 @@
       }
     });
 
+    document.getElementById("gridNineBtn").addEventListener("click",()=>{
+      state.gridMany = false;
+      const enabled=!(state.gridShot&&state.gridNine);
+      state.gridShot=enabled;state.gridNine=enabled;
+      state.apmMode=state.survivalMode=state.attackMove=false;
+      updateShotModeButtons();renderRanking();playSound("toggle");
+      if(state.playing)spawnTarget();
+    });
+    document.getElementById("gridManyBtn").addEventListener("click", () => {
+      const enabled = !(state.gridShot && state.gridMany && !state.gridColor);
+      state.gridColor = false;
+      state.gridShot = state.gridMany = enabled;
+      state.gridNine = state.apmMode = state.survivalMode = state.attackMove = false;
+      updateShotModeButtons(); renderRanking(); playSound("toggle");
+      if (state.playing) spawnTarget();
+    });
+    document.getElementById("colorManyBtn").addEventListener("click", () => {
+      const enabled = !(state.gridShot && state.gridMany && state.gridColor);
+      state.gridShot = state.gridMany = enabled;
+      state.gridColor = true;
+      state.gridNine = state.apmMode = state.survivalMode = state.attackMove = false;
+      updateShotModeButtons(); renderRanking(); playSound("toggle");
+      if (state.playing) spawnTarget();
+    });
+    document.getElementById("manyChallenge").disabled = true;
+    document.getElementById("manyChallenge").addEventListener("change", () => renderRanking());
+    window.addEventListener("resize", () => {
+      if (!state.playing || !state.gridShot || !state.gridMany) return;
+      const layout = manyGridLayout(), size = targetSizeForViewport();
+      state.targets.forEach(t => {
+        Object.assign(t, manyGridPoint(t, layout), { size });
+        t.element.style.setProperty("--x", t.x + "px");
+        t.element.style.setProperty("--y", t.y + "px");
+        t.element.style.setProperty("--size", size + "px");
+      });
+    });
+    window.addEventListener("resize",()=>{
+      if(!state.playing||!state.gridShot||!state.gridNine)return;
+      const layout=gridNineLayout(),size=targetSizeForViewport();
+      state.targets.forEach(t=>{
+        t.x=layout.x+(t.cell%3-1)*layout.pitch;
+        t.y=layout.y+(Math.floor(t.cell/3)-1)*layout.pitch;t.size=size;
+        t.element.style.setProperty("--x",t.x+"px");t.element.style.setProperty("--y",t.y+"px");
+        t.element.style.setProperty("--size",size+"px");
+      });
+    });
     apmBtn.addEventListener("click", () => {
-      state.apmMode = !state.apmMode;
+      const enable = state.apmColorHold || !state.apmMode;
+      state.apmColorHold = false;
+      state.apmMode = enable;
       if (state.apmMode) {
         state.gridShot = false;
         state.survivalMode = false;
@@ -2981,6 +3316,68 @@
         spawnTarget();
       }
     });
+
+    const colorHoldKeys = [
+      {key:"Q",code:"KeyQ",color:"#70d5ff",name:"青"},
+      {key:"W",code:"KeyW",color:"#ff97b0",name:"ピンク"},
+      {key:"E",code:"KeyE",color:"#ffd56b",name:"黄"},
+      {key:"R",code:"KeyR",color:"#85e7a4",name:"緑"}
+    ];
+    const heldColorKeys = new Set();
+    let colorHoldIndex = 0, colorHoldStep = -1;
+    const colorHoldLegend = document.createElement("aside");
+    colorHoldLegend.className = "apm-key-legend";
+    colorHoldLegend.setAttribute("aria-label", "ライトの色と押し続けるキー");
+    const colorHoldLabel = document.createElement("div");
+    colorHoldLabel.setAttribute("aria-live", "polite");
+    const colorHoldRow = document.createElement("div");colorHoldRow.className="key-row";
+    for (const item of colorHoldKeys) {
+      const chip=document.createElement("span");chip.className="key-chip";
+      chip.style.setProperty("--key-color",item.color);chip.textContent=item.key;
+      chip.setAttribute("aria-label",`${item.key} ${item.name}`);colorHoldRow.append(chip);
+    }
+    colorHoldLegend.append(colorHoldLabel,colorHoldRow);stage.append(colorHoldLegend);
+    window.addEventListener("resize",()=>{
+      if(!state.playing||!state.apmMode||!state.apmColorHold)return;
+      for(const target of state.targets){
+        const point=avoidColorHoldLegend(target.x,target.y,target.size);
+        target.x=point.x;target.y=point.y;
+        target.element.style.setProperty("--x",point.x+"px");
+        target.element.style.setProperty("--y",point.y+"px");
+      }
+    });
+    function updateColorHold() {
+      if (!state.playing || !state.apmMode || !state.apmColorHold) return;
+      const step=Math.floor(state.hits/apmStartNumber);
+      if(step===colorHoldStep)return;
+      colorHoldIndex=colorHoldStep<0?Math.floor(Math.random()*4):(colorHoldIndex+1+Math.floor(Math.random()*3))%4;
+      colorHoldStep=step;
+      const item=colorHoldKeys[colorHoldIndex];stage.style.setProperty("--hold-color",item.color);
+      colorHoldLabel.textContent=`${item.key} を押しながらクリック`;
+      [...colorHoldRow.children].forEach((chip,i)=>chip.classList.toggle("active",i===colorHoldIndex));
+    }
+    function stopColorHold(){heldColorKeys.clear();stage.classList.remove("color-hold-active");}
+    function startColorHold(){
+      stopColorHold();colorHoldStep=-1;
+      if(!state.apmMode||!state.apmColorHold)return;
+      stage.classList.add("color-hold-active");updateColorHold();
+    }
+    document.addEventListener("keydown",event=>{
+      if(!state.playing||!state.apmMode||!state.apmColorHold||event.ctrlKey||event.altKey||event.metaKey||event.isComposing)return;
+      if(event.target.closest("input,textarea,select,[contenteditable],.cursor-panel,.release-panel"))return;
+      if(colorHoldKeys.some(item=>item.code===event.code)){event.preventDefault();heldColorKeys.add(event.code);}
+    });
+    document.addEventListener("keyup",event=>heldColorKeys.delete(event.code));
+    window.addEventListener("blur",()=>heldColorKeys.clear());
+    document.addEventListener("visibilitychange",()=>{if(document.hidden)heldColorKeys.clear();});
+    const apmColorBtn=document.getElementById("apmColorBtn");
+    apmColorBtn.addEventListener("click",()=>{
+      const enable=!(state.apmMode&&state.apmColorHold);
+      state.apmColorHold=enable;state.apmMode=enable;
+      if(enable){state.gridShot=false;state.survivalMode=false;state.attackMove=false;state.multitask=false;}
+      state.apmNext=apmStartNumber;playSound("toggle");updateShotModeButtons();renderRanking();
+    });
+    document.addEventListener("click",()=>apmColorBtn.setAttribute("aria-pressed",String(state.apmMode&&state.apmColorHold)));
 
     survivalBtn.addEventListener("click", () => {
       state.survivalMode = !state.survivalMode;
